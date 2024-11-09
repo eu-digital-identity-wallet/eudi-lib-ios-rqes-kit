@@ -1,0 +1,24 @@
+{
+  "originHash" : "d330fe4a3afc0ad8175fa1744f4bc7badcc7579345935655c097d27ee6513394",
+  "pins" : [
+    {
+      "identity" : "eudi-lib-ios-rqes-csc-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/niscy-eudiw/eudi-lib-ios-rqes-csc-swift.git",
+      "state" : {
+        "branch" : "initial",
+        "revision" : "07f81a6bee00c1c46c9e4456cbabbfa7e6fc13fb"
+      }
+    },
+    {
+      "identity" : "swift-log",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-log.git",
+      "state" : {
+        "revision" : "9cb486020ebf03bfa5b5df985387a14a98744537",
+        "version" : "1.6.1"
+      }
+    }
+  ],
+  "version" : 3
+}
