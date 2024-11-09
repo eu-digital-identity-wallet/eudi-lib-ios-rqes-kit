@@ -13,200 +13,127 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import Foundation
 import RQES_LIBRARY
+import CommonCrypto
+import X509
+import SwiftASN1
 
-public final class RQESService: @unchecked Sendable {
+public typealias RSSPMetadata = RQES_LIBRARY.InfoServiceResponse
+public typealias CredentialInfo = CSCCredentialsListResponse.CredentialInfo
+public typealias HashAlgorithmOID = RQES_LIBRARY.HashAlgorithmOID
 
-    func testInvokeInfoService() async throws {
+ // ---------------------------
+public class RQESService: RQESServiceProtocol, @unchecked Sendable {
+   
+	var baseProviderUrl: String?
+	var clientConfig: CSCClientConfig
+	var codeChallenge: String?
+	var verifier: String?
+	var state: String?
+	var rqes: RQES!
+	
+	/// Initialize the RQES service
+	/// - Parameter clientConfig: CSC client configuration
+	required public init(clientConfig: CSCClientConfig) {
+		self.clientConfig = clientConfig
+	}
+	
+	/// Retrieve the RSSP metadata
+	public func getRSSPMetadata() async throws -> RSSPMetadata {
+		// STEP 1: Initialize an instance of RQES to access library services
+		// This initializes the RQES object for invoking various service methods
+		rqes = await RQES()
+		// STEP 2: Retrieve service information using the InfoService
+		let request = InfoServiceRequest(lang: "en-US")
+		let response = try await rqes.getInfo(request: request)
+		baseProviderUrl = response.oauth2
+		return response
+	}
+	
+	/// Retrieve the service authorization URL
+	/// - Parameter cookie: Cookie
+	/// - Returns: The service authorization URL
+	/// The service authorization URL is used to authorize the service to access the user's credentials.
+	public func getServiceAuthorizationUrl(cookie: String? = nil) async throws -> URL {
+		if baseProviderUrl == nil { baseProviderUrl = try await getRSSPMetadata().oauth2 }
+		let urlString = "\(baseProviderUrl!)/oauth2/authorize"
+		guard let url = URL(string: urlString) else { throw ClientError.invalidRequestURL }
+		verifier = Self.createCodeVerifier()
+		codeChallenge = Self.codeChallenge(for: verifier!)
+		state = UUID().uuidString
+		let authorizeRequest = OAuth2AuthorizeRequest(responseType: "code", clientId: clientConfig.clientId, redirectUri: clientConfig.redirectUri, scope: RQES_LIBRARY.Scope.SERVICE, codeChallenge: codeChallenge!, codeChallengeMethod: "S256", state: state!, cookie: cookie ?? "")
+		let queryItems = authorizeRequest.toQueryItems()
+		var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+		components?.queryItems = queryItems
+		guard let completeUrl = components?.url else { throw OAuth2AuthorizeError.invalidAuthorizationDetails 	}
+		return completeUrl
+	}
+	
+	/// Authorize the service
+	/// - Parameter authorizationCode: The authorization code
+	/// - Returns: The authorized service instance
+	/// Once the authorizationCode is obtained using the service authorization URL, it can be used to authorize the service.
+	public func authorizeService(authorizationCode: String) async throws -> RQESServiceAuthorized {
+		// STEP 6: Request an OAuth2 Token using the authorization code
+		let tokenRequest = OAuth2TokenRequest(clientId: clientConfig.clientId, redirectUri: clientConfig.redirectUri, grantType: "authorization_code", codeVerifier: verifier!, code: authorizationCode, state: state!, auth: nil)
+		let tokenResponse = try await rqes.getOAuth2Token(request: tokenRequest)
+		let accessToken = tokenResponse.accessToken
+		return RQESServiceAuthorized(rqes, clientConfig: self.clientConfig, accessToken: accessToken, baseProviderUrl: baseProviderUrl!)
+	}
+	
+	
+	// MARK: - Utils
+	static func calculateHashes(_ rqes: RQES, documents: [Data], certificates: [String], accessToken: String, signatureFormat: SignatureFormat = SignatureFormat.P, conformanceLevel: ConformanceLevel = ConformanceLevel.ADES_B_B, signedEnvelopeProperty: SignedEnvelopeProperty = SignedEnvelopeProperty.ENVELOPED) async throws -> CalculateHashResponse {
+		  let request = CalculateHashRequest(
+			documents: documents.map { CalculateHashRequest.Document(document: $0.base64EncodedString(), signatureFormat: signatureFormat, conformanceLevel: conformanceLevel,  signedEnvelopeProperty: SignedEnvelopeProperty.ENVELOPED, container: "No") }, endEntityCertificate: certificates[0], certificateChain: Array(certificates.dropFirst()), hashAlgorithmOID: HashAlgorithmOID.SHA256)
+		  return try await rqes.calculateHash(request: request, accessToken: accessToken)
+	  }
+	
+	static func createCodeVerifier() -> String {
+		var buffer = [UInt8](repeating: 0, count: 32)
+		_ = SecRandomCopyBytes(kSecRandomDefault, buffer.count, &buffer)
+		return Data(buffer).base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "").trimmingCharacters(in: .whitespaces)
+	}
+	
+	static func codeChallenge(for verifier: String) -> String {
+		guard let data = verifier.data(using: .utf8) else { fatalError() }
+		let hash = data.hash(for: .sha256)
+		return hash.base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "").trimmingCharacters(in: .whitespaces)
+	}
+	
+}
 
-        // STEP 1: Initialize an instance of RQES to access library services
-        // This initializes the RQES object for invoking various service methods
-        let rqes = await RQES()
+extension Data {
+	enum Algorithm {
+		case sha256
+		
+		var digestLength: Int {
+			switch self {
+			case .sha256: return Int(CC_SHA256_DIGEST_LENGTH)
+			}
+		}
+	}
+	
+	func hash(for algorithm: Algorithm) -> Data {
+		let hashBytes = UnsafeMutablePointer<UInt8>.allocate(capacity: algorithm.digestLength)
+		defer { hashBytes.deallocate() }
+		switch algorithm {
+		case .sha256:
+			withUnsafeBytes { (buffer) -> Void in
+				CC_SHA256(buffer.baseAddress!, CC_LONG(buffer.count), hashBytes)
+			}
+		}
+		
+		return Data(bytes: hashBytes, count: algorithm.digestLength)
+	}
+}
 
-        // STEP 2: Retrieve service information using the InfoService
-        let request = InfoServiceRequest(lang: "en-US")
-        let response = try await rqes.getInfo(request: request)
-
-        // STEP 3: Create a login request with test credentials
-        let loginRequest = LoginRequest(
-            username: "8PfCAQzTmON+FHDvH4GW/g+JUtg5eVTgtqMKZFdB/+c=;FirstName;TesterUser",
-            password: "5adUg@35Lk_Wrm3")
-
-        // STEP 4: Perform the login operation and capture the response
-        let loginResponse = try await rqes.login(request: loginRequest)
-
-        // STEP 5: Set up an authorization request using OAuth2AuthorizeRequest with required parameters
-        let authorizeRequest = OAuth2AuthorizeRequest(
-            responseType: "code",
-            clientId: "wallet-client",
-            redirectUri: "https://walletcentric.signer.eudiw.dev/tester/oauth/login/code",
-            scope: "service",
-            codeChallenge: "V4n5D1_bu7BPMXWsTulFVkC4ASFmeS7lHXSqIf-vUwI",
-            codeChallengeMethod: "S256",
-            state: "erv8utb5uie",
-            credentialID: nil,
-            signatureQualifier: nil,
-            numSignatures: nil,
-            hashes: nil,
-            hashAlgorithmOID: nil,
-            authorizationDetails: nil,
-            requestUri: nil,
-            cookie: loginResponse.cookie!
-        )
-
-        let authorizeResponse = try await rqes.getAuthorizeUrl(request: authorizeRequest)
-
-        // STEP 6: Request an OAuth2 Token using the authorization code
-        let tokenRequest = OAuth2TokenRequest(
-            clientId: "wallet-client-tester",
-            redirectUri: "https://walletcentric.signer.eudiw.dev/tester/oauth/login/code",
-            grantType: "authorization_code",
-            codeVerifier: "z34oHaauNSc13ScLRDmbQrJ5bIR9IDzRCWZTRRAPtlV",
-            code: authorizeResponse.code,
-            state: "erv8utb5uie",
-            auth: OAuth2TokenRequest.BasicAuth(
-                username: "wallet-client",
-                password: "somesecret2"
-            )
-        )
-
-        let tokenResponse = try await rqes.getOAuth2Token(request: tokenRequest)
-
-        // STEP 7: Request the list of credentials using the access token
-        let credentialListRequest = CSCCredentialsListRequest(
-            credentialInfo: true,
-            certificates: "chain",
-            certInfo: true
-        )
-
-        let credentialListResponse = try await rqes.getCredentialsList(
-            request: credentialListRequest, accessToken: tokenResponse.accessToken)
-
-        // STEP 8: Request the list of credentials using the access token
-        let credentialInfoRequest = CSCCredentialsInfoRequest(
-            credentialID: credentialListResponse.credentialIDs[0],
-            credentialInfo: true,
-            certificates: "chain",
-            certInfo: true
-        )
-
-        let credentialInfoResponse = try await rqes.getCredentialsInfo(
-            request: credentialInfoRequest, accessToken: tokenResponse.accessToken)
-
-        // This loads the PDF document from the specified file name within the resources,
-        // encodes it in Base64 format, and assigns it to the pdfDocument variable for further processing.
-        let pdfDocument = FileUtils.getBase64EncodedDocument(fileNameWithExtension: "sample 1.pdf")
-
-        // STEP 9: Request the list of credentials using the access token
-        let calculateHashRequest = CalculateHashRequest(
-            documents: [
-                CalculateHashRequest.Document(
-                    document: pdfDocument!,
-                    signatureFormat: "P",
-                    conformanceLevel: "Ades-B-B",
-                    signedEnvelopeProperty: "ENVELOPED",
-                    container: "No"
-                )
-            ],
-            endEntityCertificate: (credentialInfoResponse.cert?.certificates?[0])!,
-            certificateChain: [(credentialInfoResponse.cert?.certificates?[1])!],
-            hashAlgorithmOID: "2.16.840.1.101.3.4.2.1"
-        )
-
-        let calculateHashResponse = try await rqes.calculateHash(
-            request: calculateHashRequest, accessToken: tokenResponse.accessToken)
-
-        // STEP 10: Set up an credential authorization request using OAuth2AuthorizeRequest with required parameters
-        let authorizationDetails = AuthorizationDetails([
-            AuthorizationDetailsItem(
-                documentDigests: [
-                    DocumentDigest(
-                        label: "A sample pdf",
-                        hash: calculateHashResponse.hashes[0]
-                    )
-                ],
-                credentialID: credentialListResponse.credentialIDs[0],
-                hashAlgorithmOID: "2.16.840.1.101.3.4.2.1",
-                locations: [],
-                type: "credential"
-            )
-        ])
-
-        let authDetailsJson = String(
-            data: try JSONEncoder().encode(authorizationDetails), encoding: .utf8)!
-
-        let authorizeCredentialRequest = OAuth2AuthorizeRequest(
-            responseType: "code",
-            clientId: "wallet-client",
-            redirectUri: "https://walletcentric.signer.eudiw.dev/tester/oauth/login/code",
-            scope: "credential",
-            codeChallenge: "V4n5D1_bu7BPMXWsTulFVkC4ASFmeS7lHXSqIf-vUwI",
-            codeChallengeMethod: "S256",
-            state: "erv8utb5uie",
-            credentialID: credentialListResponse.credentialIDs[0],
-            signatureQualifier: nil,
-            numSignatures: nil,
-            hashes: nil,
-            hashAlgorithmOID: nil,
-            authorizationDetails: authDetailsJson,
-            requestUri: nil,
-            cookie: loginResponse.cookie!
-        )
-
-        let authorizeCredentialResponse = try await rqes.getAuthorizeUrl(
-            request: authorizeCredentialRequest)
-
-        // STEP 11: Request OAuth2 token for credential authorization
-        let tokenCredentialRequest = OAuth2TokenRequest(
-            clientId: "wallet-client-tester",
-            redirectUri: "https://walletcentric.signer.eudiw.dev/tester/oauth/login/code",
-            grantType: "authorization_code",
-            codeVerifier: "z34oHaauNSc13ScLRDmbQrJ5bIR9IDzRCWZTRRAPtlV",
-            code: authorizeCredentialResponse.code,
-            state: "erv8utb5uie",
-            auth: OAuth2TokenRequest.BasicAuth(
-                username: "wallet-client",
-                password: "somesecret2"
-            ),
-            authorizationDetails: authDetailsJson
-        )
-
-        let tokenCredentialResponse = try await rqes.getOAuth2Token(request: tokenCredentialRequest)
-
-        // STEP 12: Sign the calculated hash with the credential
-        let signHashRequest = SignHashRequest(
-            credentialID: credentialListResponse.credentialIDs[0],
-            hashes: [calculateHashResponse.hashes[0]],
-            hashAlgorithmOID: "2.16.840.1.101.3.4.2.1",
-            signAlgo: "1.2.840.113549.1.1.1",
-            operationMode: "S"
-        )
-
-        let signHashResponse = try await rqes.signHash(
-            request: signHashRequest, accessToken: tokenCredentialResponse.accessToken)
-
-        // STEP 13: Obtain the signed document
-        let obtainSignedDocRequest = ObtainSignedDocRequest(
-            documents: [
-              ObtainSignedDocRequest.Document(
-                    document: pdfDocument!, signatureFormat: "P", conformanceLevel: "Ades-B-B",
-                    signedEnvelopeProperty: "ENVELOPED", container: "No")
-                    
-            ],
-            endEntityCertificate: credentialInfoResponse.cert?.certificates?.first ?? "",
-            certificateChain: credentialInfoResponse.cert?.certificates?.dropFirst().map { $0 }
-                ?? [],
-            hashAlgorithmOID: "2.16.840.1.101.3.4.2.1",
-            date: calculateHashResponse.signatureDate,
-            signatures: signHashResponse.signatures ?? []
-        )
-
-        let obtainSignedDocResponse = try await rqes.obtainSignedDoc(
-            request: obtainSignedDocRequest, accessToken: tokenCredentialResponse.accessToken)
-        let base64String = obtainSignedDocResponse.documentWithSignature[0]
-
-        // Save the decoded data to the user's documents folder
-         _ = FileUtils.decodeAndSaveBase64Document(base64String: base64String, fileNameWithExtension: "signed.pdf")
-    }
+extension X509.Certificate {
+	var base64String: String {
+		var ser = DER.Serializer()
+		try! serialize(into: &ser)
+		return Data(ser.serializedBytes).base64EncodedString()
+	}
 }

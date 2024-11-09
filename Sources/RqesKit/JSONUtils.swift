@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024 European Commission
+ * Copyright (c) 2023 European Commission
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,17 @@
  */
 import Foundation
 
-/// Represents a document.
-public struct Document {
-	public init(id: String, data: Data) {
-		self.id = id
-		self.data = data
-	}
-    /// The identifier of the document.
-    let id: String
-    /// The data of the document.
-    let data: Data
-	
+struct JSONUtils {
+    
+    public static func stringify<T: Encodable>(_ object: T) -> String? {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .withoutEscapingSlashes      
+        do {
+            let jsonData = try encoder.encode(object)
+            return String(data: jsonData, encoding: .utf8)
+        } catch {
+            print("Error encoding object to JSON: \(error)")
+            return nil
+        }
+    }
 }
