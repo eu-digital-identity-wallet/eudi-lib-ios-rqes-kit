@@ -46,6 +46,7 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol {
     /// - Returns: The list of credentials
     /// The credentials are the user's credentials that can be used to sign the documents.
 	public func getCredentialsList() async throws -> [CredentialInfo] {
+		// STEP 7: Request the list of credentials using the access token
 		let requestDefault = CSCCredentialsListRequest(credentialInfo: true, certificates: "chain", certInfo: true)
 		  let response = try await rqes.getCredentialsList(request: requestDefault, accessToken: accessToken)
 		guard let credentialInfos = response.credentialInfos else { throw OAuth2TokenError.invalidResponse }
@@ -64,14 +65,15 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol {
     public func getCredentialAuthorizationUrl(credentialInfo: CredentialInfo, documents: [Document], hashAlgorithmOID: HashAlgorithmOID? = nil, certificates: [X509.Certificate]? = nil, cookie: String? = nil) async throws -> URL {
 		self.documents = documents
 		self.credentialInfo = credentialInfo
+		self.hashAlgorithmOID = hashAlgorithmOID ?? HashAlgorithmOID.SHA256
+		let certs = certificates?.map(\.base64String) ?? credentialInfo.cert.certificates
 		let urlString = "\(baseProviderUrl)/oauth2/authorize"
 		guard let url = URL(string: urlString) else { throw ClientError.invalidRequestURL }
+		// STEP 9: calculate hashes
+		calculateHashResponse = try await RQESService.calculateHashes(rqes, documents: documents.map(\.data), certificates: certs, accessToken: accessToken, hashAlgorithmOID: self.hashAlgorithmOID!)
 		// STEP 10: Set up an credential authorization request using OAuth2AuthorizeRequest with required parameters
-		let certs = certificates?.map(\.base64String) ?? credentialInfo.cert.certificates
-		calculateHashResponse = try await RQESService.calculateHashes(rqes, documents: documents.map(\.data), certificates: certs, accessToken: accessToken)
-		self.hashAlgorithmOID = hashAlgorithmOID ?? HashAlgorithmOID.SHA256
 		let authorizationDetails = AuthorizationDetails([
-				AuthorizationDetailsItem(documentDigests: calculateHashResponse!.hashes.enumerated().map { i,h in DocumentDigest(label: documents[i].id,	hash: h) }, credentialID: credentialInfo.credentialID, hashAlgorithmOID: self.hashAlgorithmOID!, locations: [], type: "credential") ])
+				AuthorizationDetailsItem(documentDigests: calculateHashResponse!.hashes.enumerated().map { i,h in DocumentDigest(label: documents[i].id, hash: h) }, credentialID: credentialInfo.credentialID, hashAlgorithmOID: self.hashAlgorithmOID!, locations: [], type: "credential") ])
 		authorizationDetailsJsonString = JSONUtils.stringify(authorizationDetails)
 		verifier = RQESService.createCodeVerifier()
 		codeChallenge = RQESService.codeChallenge(for: verifier!)

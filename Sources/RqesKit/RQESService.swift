@@ -63,6 +63,7 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 		verifier = Self.createCodeVerifier()
 		codeChallenge = Self.codeChallenge(for: verifier!)
 		state = UUID().uuidString
+		// STEP 5: Set up an authorization request using OAuth2AuthorizeRequest with required parameters
 		let authorizeRequest = OAuth2AuthorizeRequest(responseType: "code", clientId: clientConfig.clientId, redirectUri: clientConfig.redirectUri, scope: RQES_LIBRARY.Scope.SERVICE, codeChallenge: codeChallenge!, codeChallengeMethod: "S256", state: state!, cookie: cookie ?? "")
 		let queryItems = authorizeRequest.toQueryItems()
 		var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
@@ -85,9 +86,9 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 	
 	
 	// MARK: - Utils
-	static func calculateHashes(_ rqes: RQES, documents: [Data], certificates: [String], accessToken: String, signatureFormat: SignatureFormat = SignatureFormat.P, conformanceLevel: ConformanceLevel = ConformanceLevel.ADES_B_B, signedEnvelopeProperty: SignedEnvelopeProperty = SignedEnvelopeProperty.ENVELOPED) async throws -> CalculateHashResponse {
+	static func calculateHashes(_ rqes: RQES, documents: [Data], certificates: [String], accessToken: String, hashAlgorithmOID: HashAlgorithmOID, signatureFormat: SignatureFormat = SignatureFormat.P, conformanceLevel: ConformanceLevel = ConformanceLevel.ADES_B_B, signedEnvelopeProperty: SignedEnvelopeProperty = SignedEnvelopeProperty.ENVELOPED) async throws -> CalculateHashResponse {
 		  let request = CalculateHashRequest(
-			documents: documents.map { CalculateHashRequest.Document(document: $0.base64EncodedString(), signatureFormat: signatureFormat, conformanceLevel: conformanceLevel,  signedEnvelopeProperty: SignedEnvelopeProperty.ENVELOPED, container: "No") }, endEntityCertificate: certificates[0], certificateChain: Array(certificates.dropFirst()), hashAlgorithmOID: HashAlgorithmOID.SHA256)
+			documents: documents.map { CalculateHashRequest.Document(document: $0.base64EncodedString(), signatureFormat: signatureFormat, conformanceLevel: conformanceLevel,  signedEnvelopeProperty: SignedEnvelopeProperty.ENVELOPED, container: "No") }, endEntityCertificate: certificates[0], certificateChain: Array(certificates.dropFirst()), hashAlgorithmOID: hashAlgorithmOID)
 		  return try await rqes.calculateHash(request: request, accessToken: accessToken)
 	  }
 	
