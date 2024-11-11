@@ -20,6 +20,7 @@ import CommonCrypto
 import X509
 import SwiftASN1
 
+public typealias SigningAlgorithmOID = RQES_LIBRARY.SigningAlgorithmOID
 /// The authorized credential is used to sign the documents. The list of documents that will be signed using the authorized credential are the documents
 /// that were passed to the ``RQESServiceAuthorizedProtocol.getCredentialAuthorizationUrl`` method.
 public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedProtocol, @unchecked Sendable {
