@@ -17,13 +17,13 @@ import Foundation
 
 /// Represents a document.
 public struct Document {
-	public init(id: String, data: Data) {
+	public init(id: String, fileURL: URL) {
 		self.id = id
-		self.data = data
+		self.fileURL = fileURL
 	}
     /// The identifier of the document.
     let id: String
-    /// The data of the document.
-    let data: Data
+    /// The file URL of the document.
+    let fileURL: URL
 	
 }

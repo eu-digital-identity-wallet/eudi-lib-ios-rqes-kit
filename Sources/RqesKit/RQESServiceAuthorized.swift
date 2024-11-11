@@ -65,12 +65,12 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Se
     public func getCredentialAuthorizationUrl(credentialInfo: CredentialInfo, documents: [Document], hashAlgorithmOID: HashAlgorithmOID? = nil, certificates: [X509.Certificate]? = nil, cookie: String? = nil) async throws -> URL {
 		self.documents = documents
 		self.credentialInfo = credentialInfo
-		self.hashAlgorithmOID = hashAlgorithmOID ?? HashAlgorithmOID.SHA256
+		self.hashAlgorithmOID = hashAlgorithmOID ?? clientConfig.defaultHashAlgorithmOID
 		let certs = certificates?.map(\.base64String) ?? credentialInfo.cert.certificates
 		let urlString = "\(baseProviderUrl)/oauth2/authorize"
 		guard let url = URL(string: urlString) else { throw ClientError.invalidRequestURL }
 		// STEP 9: calculate hashes
-		calculateHashResponse = try await RQESService.calculateHashes(rqes, documents: documents.map(\.data), certificates: certs, accessToken: accessToken, hashAlgorithmOID: self.hashAlgorithmOID!)
+		calculateHashResponse = try await RQESService.calculateHashes(rqes, documents: documents.map(\.fileURL), certificates: certs, accessToken: accessToken, hashAlgorithmOID: self.hashAlgorithmOID!)
 		// STEP 10: Set up an credential authorization request using OAuth2AuthorizeRequest with required parameters
 		let authorizationDetails = AuthorizationDetails([
 				AuthorizationDetailsItem(documentDigests: calculateHashResponse!.hashes.enumerated().map { i,h in DocumentDigest(label: documents[i].id, hash: h) }, credentialID: credentialInfo.credentialID, hashAlgorithmOID: self.hashAlgorithmOID!, locations: [], type: "credential") ])
@@ -98,6 +98,6 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Se
 				authorizationDetails: authorizationDetailsJsonString!)
 		let tokenCredentialResponse = try await rqes.getOAuth2Token(request: tokenCredentialRequest)
 		let credentialAccessToken = tokenCredentialResponse.accessToken
-		return RQESServiceCredentialAuthorized(rqes: rqes, credentialInfo: credentialInfo!, credentialAccessToken: credentialAccessToken, documents: documents!, calculateHashResponse: calculateHashResponse!, hashAlgorithmOID: hashAlgorithmOID!)
+		return RQESServiceCredentialAuthorized(rqes: rqes, clientConfig: clientConfig, credentialInfo: credentialInfo!, credentialAccessToken: credentialAccessToken, documents: documents!, calculateHashResponse: calculateHashResponse!, hashAlgorithmOID: hashAlgorithmOID!)
 	}
 }

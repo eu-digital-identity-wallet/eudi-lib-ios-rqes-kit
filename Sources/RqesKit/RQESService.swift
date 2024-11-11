@@ -86,9 +86,9 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 	
 	
 	// MARK: - Utils
-	static func calculateHashes(_ rqes: RQES, documents: [Data], certificates: [String], accessToken: String, hashAlgorithmOID: HashAlgorithmOID, signatureFormat: SignatureFormat = SignatureFormat.P, conformanceLevel: ConformanceLevel = ConformanceLevel.ADES_B_B, signedEnvelopeProperty: SignedEnvelopeProperty = SignedEnvelopeProperty.ENVELOPED) async throws -> CalculateHashResponse {
+	static func calculateHashes(_ rqes: RQES, documents: [URL], certificates: [String], accessToken: String, hashAlgorithmOID: HashAlgorithmOID, signatureFormat: SignatureFormat = SignatureFormat.P, conformanceLevel: ConformanceLevel = ConformanceLevel.ADES_B_B, signedEnvelopeProperty: SignedEnvelopeProperty = SignedEnvelopeProperty.ENVELOPED) async throws -> CalculateHashResponse {
 		  let request = CalculateHashRequest(
-			documents: documents.map { CalculateHashRequest.Document(document: $0.base64EncodedString(), signatureFormat: signatureFormat, conformanceLevel: conformanceLevel,  signedEnvelopeProperty: SignedEnvelopeProperty.ENVELOPED, container: "No") }, endEntityCertificate: certificates[0], certificateChain: Array(certificates.dropFirst()), hashAlgorithmOID: hashAlgorithmOID)
+			documents: documents.map { CalculateHashRequest.Document(document: (try! Data(contentsOf: $0)).base64EncodedString(), signatureFormat: signatureFormat, conformanceLevel: conformanceLevel,  signedEnvelopeProperty: SignedEnvelopeProperty.ENVELOPED, container: "No") }, endEntityCertificate: certificates[0], certificateChain: Array(certificates.dropFirst()), hashAlgorithmOID: hashAlgorithmOID)
 		  return try await rqes.calculateHash(request: request, accessToken: accessToken)
 	  }
 	
@@ -102,6 +102,13 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 		guard let data = verifier.data(using: .utf8) else { fatalError() }
 		let hash = data.hash(for: .sha256)
 		return hash.base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "").trimmingCharacters(in: .whitespaces)
+	}
+
+	static func saveToTempFile(data: Data) throws -> URL {
+		let tempDir = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+		let tempFile = tempDir.appendingPathComponent(UUID().uuidString)
+		try data.write(to: tempFile)
+		return tempFile
 	}
 	
 }

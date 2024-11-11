@@ -14,17 +14,22 @@
  * limitations under the License.
  */
 import Foundation
+import RQES_LIBRARY
 
  public struct CSCClientConfig {
-	public init(clientId: String, redirectUri: String, clientCredentials: CSCClientConfig.ClientCredentials? = nil) {
+	public init(clientId: String, redirectUri: String, clientCredentials: CSCClientConfig.ClientCredentials? = nil, defaultHashAlgorithmOID: HashAlgorithmOID = .SHA256, defaultSigningAlgorithmOID: SigningAlgorithmOID = .RSA) {
 		self.clientId = clientId
 		self.redirectUri = redirectUri
 		self.clientCredentials = clientCredentials
+		self.defaultHashAlgorithmOID = defaultHashAlgorithmOID
+		self.defaultSigningAlgorithmOID = defaultSigningAlgorithmOID
 	}
 	
 	public let clientId: String
 	public let redirectUri: String
 	public let clientCredentials: CSCClientConfig.ClientCredentials?
+	public let defaultHashAlgorithmOID: HashAlgorithmOID
+	public let defaultSigningAlgorithmOID: SigningAlgorithmOID
 	
 	public struct ClientCredentials {
 		public init(clientId: String, clientSecret: String) {
