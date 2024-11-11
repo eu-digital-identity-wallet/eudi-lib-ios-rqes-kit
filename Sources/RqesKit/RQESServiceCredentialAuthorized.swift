@@ -22,7 +22,7 @@ import SwiftASN1
 
 /// The authorized credential is used to sign the documents. The list of documents that will be signed using the authorized credential are the documents
 /// that were passed to the ``RQESServiceAuthorizedProtocol.getCredentialAuthorizationUrl`` method.
-public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedProtocol {
+public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedProtocol, @unchecked Sendable {
     var rqes: RQES
     var credentialInfo: CredentialInfo
     var credentialAccessToken: String

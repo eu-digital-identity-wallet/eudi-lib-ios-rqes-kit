@@ -20,7 +20,7 @@ import CommonCrypto
 import X509
 import SwiftASN1
 
-public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol {
+public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Sendable {
 
     var rqes: RQES
     var clientConfig: CSCClientConfig
