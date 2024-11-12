@@ -56,10 +56,9 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 	}
 	
 	/// Retrieve the service authorization URL
-	/// - Parameter cookie: Cookie
 	/// - Returns: The service authorization URL
 	/// The service authorization URL is used to authorize the service to access the user's credentials.
-	public func getServiceAuthorizationUrl(cookie: String? = nil) async throws -> URL {
+	public func getServiceAuthorizationUrl() async throws -> URL {
 		state = UUID().uuidString
 		// STEP 5: Set up an authorization request using OAuth2AuthorizeRequest with required parameters
 		let response = try await rqes.prepareServiceAuthorizationRequest(walletState: state!)

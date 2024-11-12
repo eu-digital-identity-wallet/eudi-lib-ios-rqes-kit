@@ -60,10 +60,9 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Se
     ///   - documents: An array of documents that will be signed.
     ///   - hashAlgorithmOID: The object identifier (OID) of the hash algorithm to be used, optional.
     ///   - certificates: An optional array of X509 certificates.
-    ///   - cookie: An optional cookie string.
     /// - Returns: The credential authorization URL
     /// The credential authorization URL is used to authorize the credential that will be used to sign the documents.
-    public func getCredentialAuthorizationUrl(credentialInfo: CredentialInfo, documents: [Document], hashAlgorithmOID: HashAlgorithmOID? = nil, certificates: [X509.Certificate]? = nil, cookie: String? = nil) async throws -> URL {
+    public func getCredentialAuthorizationUrl(credentialInfo: CredentialInfo, documents: [Document], hashAlgorithmOID: HashAlgorithmOID? = nil, certificates: [X509.Certificate]? = nil) async throws -> URL {
 		self.documents = documents
 		self.credentialInfo = credentialInfo
 		self.hashAlgorithmOID = hashAlgorithmOID ?? defaultHashAlgorithmOID

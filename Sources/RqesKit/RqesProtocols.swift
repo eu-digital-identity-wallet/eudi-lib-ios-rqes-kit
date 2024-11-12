@@ -29,10 +29,9 @@ public protocol RQESServiceProtocol {
 	/// Retrieve the RSSP metadata
 	func getRSSPMetadata() async throws -> RSSPMetadata
 	/// Retrieve the service authorization URL
-	/// - Parameter cookie: Cookie
 	/// - Returns: The service authorization URL
 	/// The service authorization URL is used to authorize the service to access the user's credentials.
-	func getServiceAuthorizationUrl(cookie: String?) async throws -> URL
+	func getServiceAuthorizationUrl() async throws -> URL
 	/// Authorize the service
 	/// - Parameter authorizationCode: The authorization code
 	/// - Returns: The authorized service instance
@@ -54,10 +53,9 @@ public protocol RQESServiceAuthorizedProtocol {
 	///   - documents: An array of documents that will be signed.
 	///   - hashAlgorithmOID: The object identifier (OID) of the hash algorithm to be used, optinal.
 	///   - certificates: An optional array of X509 certificates.
-	///   - cookie: An optional cookie string.
 	/// - Returns: The credential authorization URL
 	/// The credential authorization URL is used to authorize the credential that will be used to sign the documents.
-	func getCredentialAuthorizationUrl(credentialInfo: CredentialInfo, documents: [Document], hashAlgorithmOID: HashAlgorithmOID?, certificates: [X509.Certificate]?, cookie: String?) async throws -> URL
+	func getCredentialAuthorizationUrl(credentialInfo: CredentialInfo, documents: [Document], hashAlgorithmOID: HashAlgorithmOID?, certificates: [X509.Certificate]?) async throws -> URL
 	/// Authorizes a credential using the provided authorization code.
 	/// - Parameter authorizationCode: A `String` containing the authorization code required for credential authorization.
 	/// - Returns: An instance of `RQESServiceCredentialAuthorizedImpl` upon successful authorization.
