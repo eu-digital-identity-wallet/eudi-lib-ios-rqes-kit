@@ -1,13 +1,13 @@
 {
-  "originHash" : "1c1d436c6f06afe20a2f1b2d97a5699aa1846daaddaa5cf4d28a1cef36eb94fd",
+  "originHash" : "fae81f6b1e0612c6a226b698efc30c0371654cbc54cc06eb304e3d22aa1ceb49",
   "pins" : [
     {
       "identity" : "eudi-lib-ios-rqes-csc-swift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/niscy-eudiw/eudi-lib-ios-rqes-csc-swift.git",
       "state" : {
-        "branch" : "initial",
-        "revision" : "3c001887750f1e2b99cd57b2a77076959293782a"
+        "branch" : "update-auth-flow",
+        "revision" : "075987ef5f098e2ac866504ed8c55514fe4cb1b3"
       }
     },
     {

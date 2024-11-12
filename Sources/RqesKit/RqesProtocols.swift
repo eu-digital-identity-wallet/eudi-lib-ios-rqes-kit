@@ -25,7 +25,7 @@ public protocol RQESServiceProtocol {
 	associatedtype RQESServiceAuthorizedImpl: RQESServiceAuthorizedProtocol
 	/// Initialize the RQES service
 	/// - Parameter clientConfig: CSC client configuration
-	init(clientConfig: CSCClientConfig)
+	init(clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID, defaultSigningAlgorithmOID: SigningAlgorithmOID)
 	/// Retrieve the RSSP metadata
 	func getRSSPMetadata() async throws -> RSSPMetadata
 	/// Retrieve the service authorization URL

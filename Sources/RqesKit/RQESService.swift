@@ -20,6 +20,7 @@ import CommonCrypto
 import X509
 import SwiftASN1
 
+public typealias CSCClientConfig = RQES_LIBRARY.CSCClientConfig
 public typealias RSSPMetadata = RQES_LIBRARY.InfoServiceResponse
 public typealias CredentialInfo = CSCCredentialsListResponse.CredentialInfo
 public typealias HashAlgorithmOID = RQES_LIBRARY.HashAlgorithmOID
@@ -29,22 +30,24 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
    
 	var baseProviderUrl: String?
 	var clientConfig: CSCClientConfig
-	var codeChallenge: String?
-	var verifier: String?
 	var state: String?
 	var rqes: RQES!
-	
+	var defaultHashAlgorithmOID: HashAlgorithmOID
+	var defaultSigningAlgorithmOID: SigningAlgorithmOID
+
 	/// Initialize the RQES service
 	/// - Parameter clientConfig: CSC client configuration
-	required public init(clientConfig: CSCClientConfig) {
+	required public init(clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID = .SHA256, defaultSigningAlgorithmOID: SigningAlgorithmOID = .RSA) {
 		self.clientConfig = clientConfig
+		self.defaultHashAlgorithmOID = defaultHashAlgorithmOID
+		self.defaultSigningAlgorithmOID = defaultSigningAlgorithmOID
 	}
 	
 	/// Retrieve the RSSP metadata
 	public func getRSSPMetadata() async throws -> RSSPMetadata {
 		// STEP 1: Initialize an instance of RQES to access library services
 		// This initializes the RQES object for invoking various service methods
-		rqes = await RQES()
+		rqes = await RQES(cscClientConfig: clientConfig)
 		// STEP 2: Retrieve service information using the InfoService
 		let request = InfoServiceRequest(lang: "en-US")
 		let response = try await rqes.getInfo(request: request)
@@ -57,19 +60,10 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 	/// - Returns: The service authorization URL
 	/// The service authorization URL is used to authorize the service to access the user's credentials.
 	public func getServiceAuthorizationUrl(cookie: String? = nil) async throws -> URL {
-		if baseProviderUrl == nil { baseProviderUrl = try await getRSSPMetadata().oauth2 }
-		let urlString = "\(baseProviderUrl!)/oauth2/authorize"
-		guard let url = URL(string: urlString) else { throw ClientError.invalidRequestURL }
-		verifier = Self.createCodeVerifier()
-		codeChallenge = Self.codeChallenge(for: verifier!)
 		state = UUID().uuidString
 		// STEP 5: Set up an authorization request using OAuth2AuthorizeRequest with required parameters
-		let authorizeRequest = OAuth2AuthorizeRequest(responseType: "code", clientId: clientConfig.clientId, redirectUri: clientConfig.redirectUri, scope: RQES_LIBRARY.Scope.SERVICE, codeChallenge: codeChallenge!, codeChallengeMethod: "S256", state: state!, cookie: cookie ?? "")
-		let queryItems = authorizeRequest.toQueryItems()
-		var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
-		components?.queryItems = queryItems
-		guard let completeUrl = components?.url else { throw OAuth2AuthorizeError.invalidAuthorizationDetails 	}
-		return completeUrl
+		let response = try await rqes.prepareServiceAuthorizationRequest(walletState: state!)
+		return URL(string: response.authorizationCodeURL)!
 	}
 	
 	/// Authorize the service
@@ -78,10 +72,10 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 	/// Once the authorizationCode is obtained using the service authorization URL, it can be used to authorize the service.
 	public func authorizeService(authorizationCode: String) async throws -> RQESServiceAuthorized {
 		// STEP 6: Request an OAuth2 Token using the authorization code
-		let tokenRequest = OAuth2TokenRequest(clientId: clientConfig.clientId, redirectUri: clientConfig.redirectUri, grantType: "authorization_code", codeVerifier: verifier!, code: authorizationCode, state: state!, auth: nil)
-		let tokenResponse = try await rqes.getOAuth2Token(request: tokenRequest)
+		let tokenRequest = OAuth2TokenDto(code: authorizationCode, state: state!)
+        let tokenResponse = try await rqes.getOAuth2Token(request: tokenRequest)
 		let accessToken = tokenResponse.accessToken
-		return RQESServiceAuthorized(rqes, clientConfig: self.clientConfig, accessToken: accessToken, baseProviderUrl: baseProviderUrl!)
+		return RQESServiceAuthorized(rqes, clientConfig: self.clientConfig, defaultHashAlgorithmOID: defaultHashAlgorithmOID, defaultSigningAlgorithmOID: defaultSigningAlgorithmOID, state: state!, accessToken: accessToken, baseProviderUrl: baseProviderUrl!)
 	}
 	
 	
@@ -91,18 +85,6 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 			documents: documents.map { CalculateHashRequest.Document(document: (try! Data(contentsOf: $0)).base64EncodedString(), signatureFormat: signatureFormat, conformanceLevel: conformanceLevel,  signedEnvelopeProperty: SignedEnvelopeProperty.ENVELOPED, container: "No") }, endEntityCertificate: certificates[0], certificateChain: Array(certificates.dropFirst()), hashAlgorithmOID: hashAlgorithmOID)
 		  return try await rqes.calculateHash(request: request, accessToken: accessToken)
 	  }
-	
-	static func createCodeVerifier() -> String {
-		var buffer = [UInt8](repeating: 0, count: 32)
-		_ = SecRandomCopyBytes(kSecRandomDefault, buffer.count, &buffer)
-		return Data(buffer).base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "").trimmingCharacters(in: .whitespaces)
-	}
-	
-	static func codeChallenge(for verifier: String) -> String {
-		guard let data = verifier.data(using: .utf8) else { fatalError() }
-		let hash = data.hash(for: .sha256)
-		return hash.base64EncodedString().replacingOccurrences(of: "+", with: "-").replacingOccurrences(of: "/", with: "_").replacingOccurrences(of: "=", with: "").trimmingCharacters(in: .whitespaces)
-	}
 
 	static func saveToTempFile(data: Data) throws -> URL {
 		let tempDir = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)

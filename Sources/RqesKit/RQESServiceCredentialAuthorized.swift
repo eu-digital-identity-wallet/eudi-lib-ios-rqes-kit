@@ -31,8 +31,9 @@ public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedPro
     var documents: [Document]
     var calculateHashResponse: CalculateHashResponse
     var hashAlgorithmOID: HashAlgorithmOID
+    var defaultSigningAlgorithmOID: SigningAlgorithmOID
  
-    public init(rqes: RQES, clientConfig: CSCClientConfig, credentialInfo: CredentialInfo, credentialAccessToken: String, documents: [Document], calculateHashResponse: CalculateHashResponse, hashAlgorithmOID: HashAlgorithmOID) {
+    public init(rqes: RQES, clientConfig: CSCClientConfig, credentialInfo: CredentialInfo, credentialAccessToken: String, documents: [Document], calculateHashResponse: CalculateHashResponse, hashAlgorithmOID: HashAlgorithmOID, defaultSigningAlgorithmOID: SigningAlgorithmOID) {
         self.rqes = rqes
         self.clientConfig = clientConfig
         self.credentialInfo = credentialInfo
@@ -40,6 +41,7 @@ public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedPro
         self.documents = documents
         self.calculateHashResponse = calculateHashResponse
         self.hashAlgorithmOID = hashAlgorithmOID
+        self.defaultSigningAlgorithmOID = defaultSigningAlgorithmOID
     }
 
     /// Signs the documents using the specified hash algorithm and certificates.
@@ -54,7 +56,7 @@ public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedPro
     /// that were passed to the ``RQESServiceAuthorizedProtocol.getCredentialAuthorizationUrl`` method.
 	public func signDocuments(signAlgorithmOID: SigningAlgorithmOID? = nil, certificates: [X509.Certificate]? = nil) async throws -> [Document] {
 		// STEP 12: Sign the calculated hash with the credential
-		let signHashRequest = SignHashRequest(credentialID: credentialInfo.credentialID, hashes: calculateHashResponse.hashes, hashAlgorithmOID: hashAlgorithmOID, signAlgo: signAlgorithmOID ?? clientConfig.defaultSigningAlgorithmOID, operationMode: "S")
+		let signHashRequest = SignHashRequest(credentialID: credentialInfo.credentialID, hashes: calculateHashResponse.hashes, hashAlgorithmOID: hashAlgorithmOID, signAlgo: signAlgorithmOID ?? defaultSigningAlgorithmOID, operationMode: "S")
 		let signHashResponse = try await rqes.signHash(request: signHashRequest, accessToken: credentialAccessToken)
 		let certs = certificates?.map(\.base64String) ?? credentialInfo.cert.certificates
 		// STEP 13: Obtain the signed document
