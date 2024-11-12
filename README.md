@@ -55,10 +55,18 @@ sequenceDiagram
 At first, construct an instance of the `RQESService` like shown below:
 
 ```swift
-let rqesService = RQESService(clientConfig: CSCClientConfig(
-        clientId: "client-id",
-        redirectUri: "rqes:redirect",
-    ),
+let cscClientConfig = CSCClientConfig(
+        OAuth2Client: CSCClientConfig.OAuth2Client(
+                clientId: "wallet-client",
+                clientSecret: "somesecret2"
+        ),
+        authFlowRedirectionURI: "https://oauthdebugger.com/debug",
+        scaBaseURL: "https://walletcentric.signer.eudiw.dev"
+)
+var rqesService = RQESService(
+    clientConfig: cscClientConfig,
+    defaultHashAlgorithmOID: .SHA256,
+    defaultSigningAlgorithmOID: .RSA
 )
 ```
 
@@ -101,7 +109,7 @@ let credentials = try await authorizedService.getCredentialsList()
 
 let credential = credentials.first!
 // Prepare the documents to sign
-let unsignedDocuments = [Document(label: "Document to sign", data: Data(loadBytes("document.pdf"))]
+let unsignedDocuments = [Document(label: "Document to sign", fileURL: Bundle.main.url(forResource: "document", withExtension:"pdf")))]
 
 // Get the credential authorization URL for the selected credential and documents
 let credentialAuthorizationUrl = try await authorizedService.getCredentialAuthorizationUrl(
