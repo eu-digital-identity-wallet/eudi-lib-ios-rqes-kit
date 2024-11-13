@@ -83,7 +83,7 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Se
     /// Once the authorizationCode is obtained using the credential authorization URL, it can be used to authorize the credential. The authorized credential can be used to sign the documents.
 	public func authorizeCredential(authorizationCode: String) async throws -> RQESServiceCredentialAuthorized {
 		// STEP 11: Request OAuth2 token for credential authorization
-        let tokenCredentialRequest = OAuth2TokenDto(code: authorizationCode, state: state, authorizationDetails: authorizationDetailsJsonString!)
+        let tokenCredentialRequest = OAuth2TokenDto(code: authorizationCode, state: state, authorizationDetails: authorizationDetailsJsonString)
         let tokenCredentialResponse = try await rqes.getOAuth2Token(request: tokenCredentialRequest)
 		let credentialAccessToken = tokenCredentialResponse.accessToken
 		return RQESServiceCredentialAuthorized(rqes: rqes, clientConfig: clientConfig, credentialInfo: credentialInfo!, credentialAccessToken: credentialAccessToken, documents: documents!, calculateHashResponse: calculateHashResponse!, hashAlgorithmOID: hashAlgorithmOID!, defaultSigningAlgorithmOID: defaultSigningAlgorithmOID)
