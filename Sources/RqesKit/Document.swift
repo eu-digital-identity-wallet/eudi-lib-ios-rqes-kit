@@ -22,8 +22,8 @@ public struct Document {
 		self.fileURL = fileURL
 	}
     /// The identifier of the document.
-    let id: String
+    public let id: String
     /// The file URL of the document.
-    let fileURL: URL
+    public let fileURL: URL
 	
 }
