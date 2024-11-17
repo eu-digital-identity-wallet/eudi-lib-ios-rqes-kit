@@ -1,13 +1,13 @@
 {
-  "originHash" : "fae81f6b1e0612c6a226b698efc30c0371654cbc54cc06eb304e3d22aa1ceb49",
+  "originHash" : "67d6e755c4890cdfcb60930d0b952815385f42101d98ff3d40456723c03c6c74",
   "pins" : [
     {
       "identity" : "eudi-lib-ios-rqes-csc-swift",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/niscy-eudiw/eudi-lib-ios-rqes-csc-swift.git",
+      "location" : "https://github.com/eu-digital-identity-wallet/eudi-lib-ios-rqes-csc-swift.git",
       "state" : {
-        "branch" : "update-auth-flow",
-        "revision" : "075987ef5f098e2ac866504ed8c55514fe4cb1b3"
+        "revision" : "d286db938dd6bddcd2aa22051e54211227cf5cba",
+        "version" : "0.0.1"
       }
     },
     {
