@@ -85,9 +85,9 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 		  return try await rqes.calculateHash(request: request, accessToken: accessToken)
 	  }
 
-	static func saveToTempFile(data: Data) throws -> URL {
+	static func saveToTempFile(data: Data, ext: String = ".pdf") throws -> URL {
 		let tempDir = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-		let tempFile = tempDir.appendingPathComponent(UUID().uuidString)
+		let tempFile = tempDir.appendingPathComponent("\(UUID().uuidString)\(ext)")
 		try data.write(to: tempFile)
 		return tempFile
 	}
