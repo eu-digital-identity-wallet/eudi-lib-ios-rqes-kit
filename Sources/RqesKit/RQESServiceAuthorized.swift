@@ -33,12 +33,14 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Se
 	var hashAlgorithmOID: HashAlgorithmOID?
 	var defaultHashAlgorithmOID: HashAlgorithmOID
 	var defaultSigningAlgorithmOID: SigningAlgorithmOID
+	var fileExtension: String
 
-    public init(_ rqes: RQES, clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID, defaultSigningAlgorithmOID: SigningAlgorithmOID, state: String, accessToken: String, baseProviderUrl: String) {
+    public init(_ rqes: RQES, clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID, defaultSigningAlgorithmOID: SigningAlgorithmOID, fileExtension: String, state: String, accessToken: String) {
 		self.rqes = rqes
         self.clientConfig = clientConfig
 		self.defaultHashAlgorithmOID = defaultHashAlgorithmOID
 		self.defaultSigningAlgorithmOID = defaultSigningAlgorithmOID
+		self.fileExtension = fileExtension
 		self.state = state
 		self.accessToken = accessToken
     }
@@ -86,6 +88,6 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Se
         let tokenCredentialRequest = OAuth2TokenDto(code: authorizationCode, state: state, authorizationDetails: authorizationDetailsJsonString)
         let tokenCredentialResponse = try await rqes.getOAuth2Token(request: tokenCredentialRequest)
 		let credentialAccessToken = tokenCredentialResponse.accessToken
-		return RQESServiceCredentialAuthorized(rqes: rqes, clientConfig: clientConfig, credentialInfo: credentialInfo!, credentialAccessToken: credentialAccessToken, documents: documents!, calculateHashResponse: calculateHashResponse!, hashAlgorithmOID: hashAlgorithmOID!, defaultSigningAlgorithmOID: defaultSigningAlgorithmOID)
+		return RQESServiceCredentialAuthorized(rqes: rqes, clientConfig: clientConfig, credentialInfo: credentialInfo!, credentialAccessToken: credentialAccessToken, documents: documents!, calculateHashResponse: calculateHashResponse!, hashAlgorithmOID: hashAlgorithmOID!, defaultSigningAlgorithmOID: defaultSigningAlgorithmOID, fileExtension: fileExtension)
 	}
 }

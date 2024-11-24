@@ -32,8 +32,9 @@ public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedPro
     var calculateHashResponse: CalculateHashResponse
     var hashAlgorithmOID: HashAlgorithmOID
     var defaultSigningAlgorithmOID: SigningAlgorithmOID
+    var fileExtension: String
  
-    public init(rqes: RQES, clientConfig: CSCClientConfig, credentialInfo: CredentialInfo, credentialAccessToken: String, documents: [Document], calculateHashResponse: CalculateHashResponse, hashAlgorithmOID: HashAlgorithmOID, defaultSigningAlgorithmOID: SigningAlgorithmOID) {
+    public init(rqes: RQES, clientConfig: CSCClientConfig, credentialInfo: CredentialInfo, credentialAccessToken: String, documents: [Document], calculateHashResponse: CalculateHashResponse, hashAlgorithmOID: HashAlgorithmOID, defaultSigningAlgorithmOID: SigningAlgorithmOID, fileExtension: String) {
         self.rqes = rqes
         self.clientConfig = clientConfig
         self.credentialInfo = credentialInfo
@@ -42,6 +43,7 @@ public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedPro
         self.calculateHashResponse = calculateHashResponse
         self.hashAlgorithmOID = hashAlgorithmOID
         self.defaultSigningAlgorithmOID = defaultSigningAlgorithmOID
+        self.fileExtension = fileExtension
     }
 
     /// Signs the documents using the specified hash algorithm and certificates.
@@ -65,7 +67,7 @@ public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedPro
 				endEntityCertificate: certs.first!, certificateChain: Array(certs.dropFirst()), hashAlgorithmOID: hashAlgorithmOID, date: calculateHashResponse.signatureDate, signatures: signHashResponse.signatures ?? [])
 		let obtainSignedDocResponse = try await rqes.obtainSignedDoc(request: obtainSignedDocRequest, accessToken: credentialAccessToken)
 
-		let documentsWithSignature = obtainSignedDocResponse.documentWithSignature.enumerated().map { i, d in Document(id: documents[i].id, fileURL: try! RQESService.saveToTempFile(data: Data(base64Encoded: d)!)) }
+		let documentsWithSignature = obtainSignedDocResponse.documentWithSignature.enumerated().map { i, d in Document(id: documents[i].id, fileURL: try! RQESService.saveToTempFile(data: Data(base64Encoded: d)!, fileExtension: fileExtension)) }
         return documentsWithSignature
 	}
 

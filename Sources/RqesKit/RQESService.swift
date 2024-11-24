@@ -28,19 +28,20 @@ public typealias HashAlgorithmOID = RQES_LIBRARY.HashAlgorithmOID
  // ---------------------------
 public class RQESService: RQESServiceProtocol, @unchecked Sendable {
    
-	var baseProviderUrl: String?
 	var clientConfig: CSCClientConfig
 	var state: String?
 	var rqes: RQES!
 	var defaultHashAlgorithmOID: HashAlgorithmOID
 	var defaultSigningAlgorithmOID: SigningAlgorithmOID
+	var fileExtension: String
 
 	/// Initialize the RQES service
 	/// - Parameter clientConfig: CSC client configuration
-	required public init(clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID = .SHA256, defaultSigningAlgorithmOID: SigningAlgorithmOID = .RSA) {
+	required public init(clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID = .SHA256, defaultSigningAlgorithmOID: SigningAlgorithmOID = .RSA, fileExtension: String = ".pdf") {
 		self.clientConfig = clientConfig
 		self.defaultHashAlgorithmOID = defaultHashAlgorithmOID
 		self.defaultSigningAlgorithmOID = defaultSigningAlgorithmOID
+		self.fileExtension = fileExtension
 	}
 	
 	/// Retrieve the RSSP metadata
@@ -51,7 +52,6 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 		// STEP 2: Retrieve service information using the InfoService
 		let request = InfoServiceRequest(lang: "en-US")
 		let response = try await rqes.getInfo(request: request)
-		baseProviderUrl = response.oauth2
 		return response
 	}
 	
@@ -74,7 +74,7 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 		let tokenRequest = OAuth2TokenDto(code: authorizationCode, state: state!)
         let tokenResponse = try await rqes.getOAuth2Token(request: tokenRequest)
 		let accessToken = tokenResponse.accessToken
-		return RQESServiceAuthorized(rqes, clientConfig: self.clientConfig, defaultHashAlgorithmOID: defaultHashAlgorithmOID, defaultSigningAlgorithmOID: defaultSigningAlgorithmOID, state: state!, accessToken: accessToken, baseProviderUrl: baseProviderUrl!)
+		return RQESServiceAuthorized(rqes, clientConfig: self.clientConfig, defaultHashAlgorithmOID: defaultHashAlgorithmOID, defaultSigningAlgorithmOID: defaultSigningAlgorithmOID, fileExtension: fileExtension, state: state!, accessToken: accessToken)
 	}
 	
 	
@@ -85,9 +85,9 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 		  return try await rqes.calculateHash(request: request, accessToken: accessToken)
 	  }
 
-	static func saveToTempFile(data: Data, ext: String = ".pdf") throws -> URL {
+	static func saveToTempFile(data: Data, fileExtension: String = ".pdf") throws -> URL {
 		let tempDir = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-		let tempFile = tempDir.appendingPathComponent("\(UUID().uuidString)\(ext)")
+		let tempFile = tempDir.appendingPathComponent("\(UUID().uuidString)\(fileExtension)")
 		try data.write(to: tempFile)
 		return tempFile
 	}
