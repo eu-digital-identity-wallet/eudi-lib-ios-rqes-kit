@@ -32,7 +32,7 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 	var state: String?
 	var rqes: RQES!
 	var defaultHashAlgorithmOID: HashAlgorithmOID
-	var defaultSigningAlgorithmOID: SigningAlgorithmOID
+	var defaultSigningAlgorithmOID: SigningAlgorithmOID?
 	var fileExtension: String
 
 	/// Initialize the RQES service
@@ -40,10 +40,9 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 	/// - Parameter defaultHashAlgorithmOID: The default hash algorithm OID
 	/// - Parameter defaultSigningAlgorithmOID: The default signing algorithm OID
 	/// - Parameter fileExtension: The file extension to be used for the signed documents
-	required public init(clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID = .SHA256, defaultSigningAlgorithmOID: SigningAlgorithmOID = .RSA, fileExtension: String = ".pdf") {
+	required public init(clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID = .SHA256, fileExtension: String = ".pdf") {
 		self.clientConfig = clientConfig
 		self.defaultHashAlgorithmOID = defaultHashAlgorithmOID
-		self.defaultSigningAlgorithmOID = defaultSigningAlgorithmOID
 		self.fileExtension = fileExtension
 	}
 	
@@ -55,6 +54,7 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 		// STEP 2: Retrieve service information using the InfoService
 		let request = InfoServiceRequest(lang: "en-US")
 		let response = try await rqes.getInfo(request: request)
+		if let algo = response.signAlgorithms.algos.first { defaultSigningAlgorithmOID = SigningAlgorithmOID(rawValue: algo) }
 		return response
 	}
 	

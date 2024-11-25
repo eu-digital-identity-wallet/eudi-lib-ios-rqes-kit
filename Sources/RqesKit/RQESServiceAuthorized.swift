@@ -33,10 +33,10 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Se
     var authorizationDetailsJsonString: String?
 	var hashAlgorithmOID: HashAlgorithmOID?
 	var defaultHashAlgorithmOID: HashAlgorithmOID
-	var defaultSigningAlgorithmOID: SigningAlgorithmOID
+	var defaultSigningAlgorithmOID: SigningAlgorithmOID?
 	var fileExtension: String
 
-    public init(_ rqes: RQES, clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID, defaultSigningAlgorithmOID: SigningAlgorithmOID, fileExtension: String, state: String, accessToken: String) {
+    public init(_ rqes: RQES, clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID, defaultSigningAlgorithmOID: SigningAlgorithmOID?, fileExtension: String, state: String, accessToken: String) {
 		self.rqes = rqes
         self.clientConfig = clientConfig
 		self.defaultHashAlgorithmOID = defaultHashAlgorithmOID
