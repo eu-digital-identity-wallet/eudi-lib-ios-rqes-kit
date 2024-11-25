@@ -20,6 +20,7 @@ import CommonCrypto
 import X509
 import SwiftASN1
 
+/// The authorized service is used to access the user's credentials
 public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Sendable {
 
     var rqes: RQES
