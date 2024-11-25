@@ -65,8 +65,7 @@ let cscClientConfig = CSCClientConfig(
 )
 var rqesService = RQESService(
     clientConfig: cscClientConfig,
-    defaultHashAlgorithmOID: .SHA256,
-    defaultSigningAlgorithmOID: .RSA
+    defaultHashAlgorithmOID: .SHA256
 )
 ```
 

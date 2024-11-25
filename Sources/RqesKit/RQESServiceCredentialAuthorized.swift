@@ -31,9 +31,10 @@ public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedPro
     var documents: [Document]
     var calculateHashResponse: CalculateHashResponse
     var hashAlgorithmOID: HashAlgorithmOID
-    var defaultSigningAlgorithmOID: SigningAlgorithmOID
+    var defaultSigningAlgorithmOID: SigningAlgorithmOID?
+    var fileExtension: String
  
-    public init(rqes: RQES, clientConfig: CSCClientConfig, credentialInfo: CredentialInfo, credentialAccessToken: String, documents: [Document], calculateHashResponse: CalculateHashResponse, hashAlgorithmOID: HashAlgorithmOID, defaultSigningAlgorithmOID: SigningAlgorithmOID) {
+    public init(rqes: RQES, clientConfig: CSCClientConfig, credentialInfo: CredentialInfo, credentialAccessToken: String, documents: [Document], calculateHashResponse: CalculateHashResponse, hashAlgorithmOID: HashAlgorithmOID, defaultSigningAlgorithmOID: SigningAlgorithmOID?, fileExtension: String) {
         self.rqes = rqes
         self.clientConfig = clientConfig
         self.credentialInfo = credentialInfo
@@ -42,6 +43,7 @@ public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedPro
         self.calculateHashResponse = calculateHashResponse
         self.hashAlgorithmOID = hashAlgorithmOID
         self.defaultSigningAlgorithmOID = defaultSigningAlgorithmOID
+        self.fileExtension = fileExtension
     }
 
     /// Signs the documents using the specified hash algorithm and certificates.
@@ -56,7 +58,8 @@ public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedPro
     /// that were passed to the ``RQESServiceAuthorizedProtocol.getCredentialAuthorizationUrl`` method.
 	public func signDocuments(signAlgorithmOID: SigningAlgorithmOID? = nil, certificates: [X509.Certificate]? = nil) async throws -> [Document] {
 		// STEP 12: Sign the calculated hash with the credential
-		let signHashRequest = SignHashRequest(credentialID: credentialInfo.credentialID, hashes: calculateHashResponse.hashes, hashAlgorithmOID: hashAlgorithmOID, signAlgo: signAlgorithmOID ?? defaultSigningAlgorithmOID, operationMode: "S")
+        guard let signAlgo = signAlgorithmOID ?? defaultSigningAlgorithmOID else { throw NSError(domain: "RQES", code: 0, userInfo: [NSLocalizedDescriptionKey: "No signing algorithm provided"]) }
+		let signHashRequest = SignHashRequest(credentialID: credentialInfo.credentialID, hashes: calculateHashResponse.hashes, hashAlgorithmOID: hashAlgorithmOID, signAlgo: signAlgo, operationMode: "S")
 		let signHashResponse = try await rqes.signHash(request: signHashRequest, accessToken: credentialAccessToken)
 		let certs = certificates?.map(\.base64String) ?? credentialInfo.cert.certificates
 		// STEP 13: Obtain the signed document
@@ -65,7 +68,7 @@ public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedPro
 				endEntityCertificate: certs.first!, certificateChain: Array(certs.dropFirst()), hashAlgorithmOID: hashAlgorithmOID, date: calculateHashResponse.signatureDate, signatures: signHashResponse.signatures ?? [])
 		let obtainSignedDocResponse = try await rqes.obtainSignedDoc(request: obtainSignedDocRequest, accessToken: credentialAccessToken)
 
-		let documentsWithSignature = obtainSignedDocResponse.documentWithSignature.enumerated().map { i, d in Document(id: documents[i].id, fileURL: try! RQESService.saveToTempFile(data: Data(base64Encoded: d)!)) }
+		let documentsWithSignature = obtainSignedDocResponse.documentWithSignature.enumerated().map { i, d in Document(id: documents[i].id, fileURL: try! RQESService.saveToTempFile(data: Data(base64Encoded: d)!, fileExtension: fileExtension)) }
         return documentsWithSignature
 	}
 
