@@ -38,7 +38,6 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 	/// Initialize the RQES service
 	/// - Parameter clientConfig: CSC client configuration
 	/// - Parameter defaultHashAlgorithmOID: The default hash algorithm OID
-	/// - Parameter defaultSigningAlgorithmOID: The default signing algorithm OID
 	/// - Parameter fileExtension: The file extension to be used for the signed documents
 	required public init(clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID = .SHA256, fileExtension: String = ".pdf") {
 		self.clientConfig = clientConfig
