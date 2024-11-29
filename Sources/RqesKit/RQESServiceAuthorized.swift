@@ -70,6 +70,16 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Se
 		self.credentialInfo = credentialInfo
 		self.hashAlgorithmOID = hashAlgorithmOID ?? defaultHashAlgorithmOID
 		let certs = certificates?.map(\.base64String) ?? credentialInfo.cert.certificates
+      
+      guard let algo = credentialInfo.key.algo.first else {
+        throw NSError(
+          domain: "Signing alogorithm error",
+          code: 0,
+          userInfo: [NSLocalizedDescriptionKey: "Failes to retrive list of supported signing algorithms"]
+        )
+      }
+      defaultSigningAlgorithmOID = SigningAlgorithmOID(rawValue: algo)
+      
 		// STEP 9: calculate hashes
 		calculateHashResponse = try await RQESService.calculateHashes(rqes, documents: documents.map(\.fileURL), certificates: certs, accessToken: accessToken, hashAlgorithmOID: self.hashAlgorithmOID!)
 		// STEP 10: Set up an credential authorization request using OAuth2AuthorizeRequest with required parameters
