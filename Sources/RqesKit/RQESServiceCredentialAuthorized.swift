@@ -29,12 +29,12 @@ public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedPro
     var credentialInfo: CredentialInfo
     var credentialAccessToken: String
     var documents: [Document]
-    var calculateHashResponse: CalculateHashResponse
+    var calculateHashResponse: DocumentDigests
     var hashAlgorithmOID: HashAlgorithmOID
     var defaultSigningAlgorithmOID: SigningAlgorithmOID?
     var fileExtension: String
  
-    public init(rqes: RQES, clientConfig: CSCClientConfig, credentialInfo: CredentialInfo, credentialAccessToken: String, documents: [Document], calculateHashResponse: CalculateHashResponse, hashAlgorithmOID: HashAlgorithmOID, defaultSigningAlgorithmOID: SigningAlgorithmOID?, fileExtension: String) {
+    public init(rqes: RQES, clientConfig: CSCClientConfig, credentialInfo: CredentialInfo, credentialAccessToken: String, documents: [Document], calculateHashResponse: DocumentDigests, hashAlgorithmOID: HashAlgorithmOID, defaultSigningAlgorithmOID: SigningAlgorithmOID?, fileExtension: String) {
         self.rqes = rqes
         self.clientConfig = clientConfig
         self.credentialInfo = credentialInfo
@@ -66,7 +66,7 @@ public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedPro
 		let obtainSignedDocRequest = ObtainSignedDocRequest(documents: documents.map {	ObtainSignedDocRequest.Document(
 			document: (try! Data(contentsOf: $0.fileURL)).base64EncodedString(), signatureFormat: SignatureFormat.P, conformanceLevel: ConformanceLevel.ADES_B_B, signedEnvelopeProperty: SignedEnvelopeProperty.ENVELOPED, container: "No") },
 				endEntityCertificate: certs.first!, certificateChain: Array(certs.dropFirst()), hashAlgorithmOID: hashAlgorithmOID, date: calculateHashResponse.signatureDate, signatures: signHashResponse.signatures ?? [])
-		let obtainSignedDocResponse = try await rqes.obtainSignedDoc(request: obtainSignedDocRequest, accessToken: credentialAccessToken)
+		let obtainSignedDocResponse = try await rqes.getSignedDocuments(request: obtainSignedDocRequest, accessToken: credentialAccessToken)
 
 		let documentsWithSignature = obtainSignedDocResponse.documentWithSignature.enumerated().map { i, d in Document(id: documents[i].id, fileURL: try! RQESService.saveToTempFile(data: Data(base64Encoded: d)!, fileExtension: fileExtension)) }
         return documentsWithSignature
