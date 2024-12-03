@@ -26,7 +26,7 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Se
     var rqes: RQES
     var clientConfig: CSCClientConfig
     var accessToken: String
-	var calculateHashResponse: CalculateHashResponse?
+	var calculateHashResponse: DocumentDigests?
 	var documents: [Document]?
 	var state: String
 	var credentialInfo: CredentialInfo?
@@ -51,9 +51,9 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Se
     /// The credentials are the user's credentials that can be used to sign the documents.
 	public func getCredentialsList() async throws -> [CredentialInfo] {
 		// STEP 7: Request the list of credentials using the access token
-		let requestDefault = CSCCredentialsListRequest(credentialInfo: true, certificates: "chain", certInfo: true)
-		  let response = try await rqes.getCredentialsList(request: requestDefault, accessToken: accessToken)
-		guard let credentialInfos = response.credentialInfos else { throw OAuth2TokenError.invalidResponse }
+		let requestDefault = CredentialsListRequest(credentialInfo: true, certificates: "chain", certInfo: true)
+		  let response = try await rqes.listCredentials(request: requestDefault, accessToken: accessToken)
+		guard let credentialInfos = response.credentialInfos else { throw NSError(domain: "RQESKit", code: 0,  userInfo: [NSLocalizedDescriptionKey: "Missing Credential Info"] ) }
 		return credentialInfos
 	  }
 
@@ -96,8 +96,8 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Se
     /// Once the authorizationCode is obtained using the credential authorization URL, it can be used to authorize the credential. The authorized credential can be used to sign the documents.
 	public func authorizeCredential(authorizationCode: String) async throws -> RQESServiceCredentialAuthorized {
 		// STEP 11: Request OAuth2 token for credential authorization
-        let tokenCredentialRequest = OAuth2TokenDto(code: authorizationCode, state: state, authorizationDetails: authorizationDetailsJsonString)
-        let tokenCredentialResponse = try await rqes.getOAuth2Token(request: tokenCredentialRequest)
+        let tokenCredentialRequest = AccessTokenRequest(code: authorizationCode, state: state, authorizationDetails: authorizationDetailsJsonString)
+        let tokenCredentialResponse = try await rqes.requestAccessTokenAuthFlow(request: tokenCredentialRequest)
 		let credentialAccessToken = tokenCredentialResponse.accessToken
 		return RQESServiceCredentialAuthorized(rqes: rqes, clientConfig: clientConfig, credentialInfo: credentialInfo!, credentialAccessToken: credentialAccessToken, documents: documents!, calculateHashResponse: calculateHashResponse!, hashAlgorithmOID: hashAlgorithmOID!, defaultSigningAlgorithmOID: defaultSigningAlgorithmOID, fileExtension: fileExtension)
 	}

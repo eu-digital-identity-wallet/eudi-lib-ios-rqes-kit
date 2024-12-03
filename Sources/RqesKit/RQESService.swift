@@ -22,7 +22,7 @@ import SwiftASN1
 
 public typealias CSCClientConfig = RQES_LIBRARY.CSCClientConfig
 public typealias RSSPMetadata = RQES_LIBRARY.InfoServiceResponse
-public typealias CredentialInfo = CSCCredentialsListResponse.CredentialInfo
+public typealias CredentialInfo = CredentialsListResponse.CredentialInfo
 public typealias HashAlgorithmOID = RQES_LIBRARY.HashAlgorithmOID
 
  // ---------------------------
@@ -73,18 +73,18 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 	/// Once the authorizationCode is obtained using the service authorization URL, it can be used to authorize the service.
 	public func authorizeService(authorizationCode: String) async throws -> RQESServiceAuthorized {
 		// STEP 6: Request an OAuth2 Token using the authorization code
-		let tokenRequest = OAuth2TokenDto(code: authorizationCode, state: state!)
-        let tokenResponse = try await rqes.getOAuth2Token(request: tokenRequest)
+		let tokenRequest = AccessTokenRequest(code: authorizationCode, state: state!)
+        let tokenResponse = try await rqes.requestAccessTokenAuthFlow(request: tokenRequest)
 		let accessToken = tokenResponse.accessToken
 		return RQESServiceAuthorized(rqes, clientConfig: self.clientConfig, defaultHashAlgorithmOID: defaultHashAlgorithmOID, defaultSigningAlgorithmOID: defaultSigningAlgorithmOID, fileExtension: fileExtension, state: state!, accessToken: accessToken)
 	}
 	
 	
 	// MARK: - Utils
-	static func calculateHashes(_ rqes: RQES, documents: [URL], certificates: [String], accessToken: String, hashAlgorithmOID: HashAlgorithmOID, signatureFormat: SignatureFormat = SignatureFormat.P, conformanceLevel: ConformanceLevel = ConformanceLevel.ADES_B_B, signedEnvelopeProperty: SignedEnvelopeProperty = SignedEnvelopeProperty.ENVELOPED) async throws -> CalculateHashResponse {
+	static func calculateHashes(_ rqes: RQES, documents: [URL], certificates: [String], accessToken: String, hashAlgorithmOID: HashAlgorithmOID, signatureFormat: SignatureFormat = SignatureFormat.P, conformanceLevel: ConformanceLevel = ConformanceLevel.ADES_B_B, signedEnvelopeProperty: SignedEnvelopeProperty = SignedEnvelopeProperty.ENVELOPED) async throws -> DocumentDigests {
 		  let request = CalculateHashRequest(
 			documents: documents.map { CalculateHashRequest.Document(document: (try! Data(contentsOf: $0)).base64EncodedString(), signatureFormat: signatureFormat, conformanceLevel: conformanceLevel,  signedEnvelopeProperty: SignedEnvelopeProperty.ENVELOPED, container: "No") }, endEntityCertificate: certificates[0], certificateChain: Array(certificates.dropFirst()), hashAlgorithmOID: hashAlgorithmOID)
-		  return try await rqes.calculateHash(request: request, accessToken: accessToken)
+		  return try await rqes.calculateDocumentHashes(request: request, accessToken: accessToken) 
 	  }
 
 	static func saveToTempFile(data: Data, fileExtension: String = ".pdf") throws -> URL {
