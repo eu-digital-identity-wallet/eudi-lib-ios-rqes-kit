@@ -24,7 +24,7 @@ import SwiftASN1
 public protocol RQESServiceProtocol {
 	associatedtype RQESServiceAuthorizedImpl: RQESServiceAuthorizedProtocol
 	/// Initialize the RQES service
-	/// - Parameter clientConfig: CSC client configuration
+	/// - Parameter clientConfig: CSC client configuration (R5: must include tsaUrl for PAdES B-T support)
 	/// - Parameter defaultHashAlgorithmOID: The default hash algorithm OID
 	/// - Parameter fileExtension: The file extension to be used for the signed documents
 	init(clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID, fileExtension: String)
@@ -74,11 +74,10 @@ public protocol RQESServiceCredentialAuthorizedProtocol {
 	/// 
 	/// - Parameters:
 	///   - signAlgorithmOID: The object identifier (OID) of the algorithm to be used for signing. This parameter is optional.
-	///   - certificates: An array of X509 certificates to be used for signing. This parameter is optional.
 	/// 
 	/// - Returns: An array of signed documents.
 	/// 
 	/// The list of documents that will be signed using the authorized credential are the documents
 	/// that were passed to the ``RQESServiceAuthorizedProtocol.getCredentialAuthorizationUrl`` method.
-	func signDocuments(signAlgorithmOID: SigningAlgorithmOID?, certificates: [X509.Certificate]?) async throws -> [Document]
+	func signDocuments(signAlgorithmOID: SigningAlgorithmOID?) async throws -> [Document]
 }

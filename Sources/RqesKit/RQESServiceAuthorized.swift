@@ -28,6 +28,7 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Se
     var accessToken: String
 	var calculateHashResponse: DocumentDigests?
 	var documents: [Document]?
+	var outputURLs: [URL]?
 	var state: String
 	var credentialInfo: CredentialInfo?
     var authorizationDetailsJsonString: String?
@@ -81,7 +82,9 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Se
       defaultSigningAlgorithmOID = SigningAlgorithmOID(rawValue: algo)
       
 		// STEP 9: calculate hashes
-		calculateHashResponse = try await RQESService.calculateHashes(rqes, documents: documents.map(\.fileURL), certificates: certs, accessToken: accessToken, hashAlgorithmOID: self.hashAlgorithmOID!)
+		let outputURLs = documents.map { _ in RQESService.getTempFileURL(fileExtension: fileExtension) }
+		self.outputURLs = outputURLs
+		calculateHashResponse = try await RQESService.calculateHashes(rqes, documents: documents.map(\.fileURL), outputURLs: outputURLs, certificates: certs, hashAlgorithmOID: self.hashAlgorithmOID!)
 		// STEP 10: Set up an credential authorization request using OAuth2AuthorizeRequest with required parameters
 		let authorizationDetails = AuthorizationDetails([
 				AuthorizationDetailsItem(documentDigests: calculateHashResponse!.hashes.enumerated().map { i,h in DocumentDigest(label: documents[i].id, hash: h) }, credentialID: credentialInfo.credentialID, hashAlgorithmOID: self.hashAlgorithmOID!, locations: [], type: "credential") ])
@@ -99,6 +102,6 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Se
         let tokenCredentialRequest = AccessTokenRequest(code: authorizationCode, state: state, authorizationDetails: authorizationDetailsJsonString)
         let tokenCredentialResponse = try await rqes.requestAccessTokenAuthFlow(request: tokenCredentialRequest)
 		let credentialAccessToken = tokenCredentialResponse.accessToken
-		return RQESServiceCredentialAuthorized(rqes: rqes, clientConfig: clientConfig, credentialInfo: credentialInfo!, credentialAccessToken: credentialAccessToken, documents: documents!, calculateHashResponse: calculateHashResponse!, hashAlgorithmOID: hashAlgorithmOID!, defaultSigningAlgorithmOID: defaultSigningAlgorithmOID, fileExtension: fileExtension)
+		return RQESServiceCredentialAuthorized(rqes: rqes, clientConfig: clientConfig, credentialInfo: credentialInfo!, credentialAccessToken: credentialAccessToken, documents: documents!, calculateHashResponse: calculateHashResponse!, hashAlgorithmOID: hashAlgorithmOID!, defaultSigningAlgorithmOID: defaultSigningAlgorithmOID, fileExtension: fileExtension, outputURLs: outputURLs!)
 	}
 }

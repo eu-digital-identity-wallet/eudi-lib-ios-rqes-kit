@@ -36,7 +36,7 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 	var fileExtension: String
 
 	/// Initialize the RQES service
-	/// - Parameter clientConfig: CSC client configuration
+	/// - Parameter clientConfig: CSC client configuration (R5: must include tsaUrl for PAdES B-T support)
 	/// - Parameter defaultHashAlgorithmOID: The default hash algorithm OID
 	/// - Parameter fileExtension: The file extension to be used for the signed documents
 	required public init(clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID = .SHA256, fileExtension: String = ".pdf") {
@@ -81,17 +81,28 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 	
 	
 	// MARK: - Utils
-	static func calculateHashes(_ rqes: RQES, documents: [URL], certificates: [String], accessToken: String, hashAlgorithmOID: HashAlgorithmOID, signatureFormat: SignatureFormat = SignatureFormat.P, conformanceLevel: ConformanceLevel = ConformanceLevel.ADES_B_B, signedEnvelopeProperty: SignedEnvelopeProperty = SignedEnvelopeProperty.ENVELOPED) async throws -> DocumentDigests {
+	static func calculateHashes(_ rqes: RQES, documents: [URL], outputURLs: [URL], certificates: [String], hashAlgorithmOID: HashAlgorithmOID, signatureFormat: SignatureFormat = SignatureFormat.P, conformanceLevel: ConformanceLevel = ConformanceLevel.ADES_B_B, signedEnvelopeProperty: SignedEnvelopeProperty = SignedEnvelopeProperty.ENVELOPED) async throws -> DocumentDigests {
 		  let request = CalculateHashRequest(
-			documents: documents.map { CalculateHashRequest.Document(document: (try! Data(contentsOf: $0)).base64EncodedString(), signatureFormat: signatureFormat, conformanceLevel: conformanceLevel,  signedEnvelopeProperty: SignedEnvelopeProperty.ENVELOPED, container: "No") }, endEntityCertificate: certificates[0], certificateChain: Array(certificates.dropFirst()), hashAlgorithmOID: hashAlgorithmOID)
-		  return try await rqes.calculateDocumentHashes(request: request, accessToken: accessToken) 
+			documents: zip(documents, outputURLs).map { (inputURL, outputURL) in 
+				CalculateHashRequest.Document(
+					documentInputPath: inputURL.path, 
+					documentOutputPath: outputURL.path, 
+					signatureFormat: signatureFormat, 
+					conformanceLevel: conformanceLevel,
+					signedEnvelopeProperty: signedEnvelopeProperty,
+					container: "No"
+				) 
+			}, 
+			endEntityCertificate: certificates[0], 
+			certificateChain: Array(certificates.dropFirst()), 
+			hashAlgorithmOID: hashAlgorithmOID)
+		  return try await rqes.calculateDocumentHashes(request: request) 
 	  }
 
-	static func saveToTempFile(data: Data, fileExtension: String = ".pdf") throws -> URL {
+	static func getTempFileURL(fileExtension: String = ".pdf") -> URL {
 		let tempDir = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-		let tempFile = tempDir.appendingPathComponent("\(UUID().uuidString)\(fileExtension)")
-		try data.write(to: tempFile)
-		return tempFile
+		let tempFileURL = tempDir.appendingPathComponent("\(UUID().uuidString)\(fileExtension)")
+		return tempFileURL
 	}
 	
 }
