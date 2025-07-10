@@ -33,8 +33,9 @@ public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedPro
     var hashAlgorithmOID: HashAlgorithmOID
     var defaultSigningAlgorithmOID: SigningAlgorithmOID?
     var fileExtension: String
+    var outputURLs: [URL]
  
-    public init(rqes: RQES, clientConfig: CSCClientConfig, credentialInfo: CredentialInfo, credentialAccessToken: String, documents: [Document], calculateHashResponse: DocumentDigests, hashAlgorithmOID: HashAlgorithmOID, defaultSigningAlgorithmOID: SigningAlgorithmOID?, fileExtension: String) {
+    public init(rqes: RQES, clientConfig: CSCClientConfig, credentialInfo: CredentialInfo, credentialAccessToken: String, documents: [Document], calculateHashResponse: DocumentDigests, hashAlgorithmOID: HashAlgorithmOID, defaultSigningAlgorithmOID: SigningAlgorithmOID?, fileExtension: String, outputURLs: [URL]) {
         self.rqes = rqes
         self.clientConfig = clientConfig
         self.credentialInfo = credentialInfo
@@ -44,6 +45,7 @@ public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedPro
         self.hashAlgorithmOID = hashAlgorithmOID
         self.defaultSigningAlgorithmOID = defaultSigningAlgorithmOID
         self.fileExtension = fileExtension
+        self.outputURLs = outputURLs
     }
 
     /// Signs the documents using the specified hash algorithm and certificates.
@@ -56,19 +58,19 @@ public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedPro
     /// 
     /// The list of documents that will be signed using the authorized credential are the documents
     /// that were passed to the ``RQESServiceAuthorizedProtocol.getCredentialAuthorizationUrl`` method.
-	public func signDocuments(signAlgorithmOID: SigningAlgorithmOID? = nil, certificates: [X509.Certificate]? = nil) async throws -> [Document] {
+	public func signDocuments(signAlgorithmOID: SigningAlgorithmOID? = nil) async throws -> [Document] {
 		// STEP 12: Sign the calculated hash with the credential
         guard let signAlgo = signAlgorithmOID ?? defaultSigningAlgorithmOID else { throw NSError(domain: "RQES", code: 0, userInfo: [NSLocalizedDescriptionKey: "No signing algorithm provided"]) }
 		let signHashRequest = SignHashRequest(credentialID: credentialInfo.credentialID, hashes: calculateHashResponse.hashes, hashAlgorithmOID: hashAlgorithmOID, signAlgo: signAlgo, operationMode: "S")
 		let signHashResponse = try await rqes.signHash(request: signHashRequest, accessToken: credentialAccessToken)
-		let certs = certificates?.map(\.base64String) ?? credentialInfo.cert.certificates
-		// STEP 13: Obtain the signed document
-		let obtainSignedDocRequest = ObtainSignedDocRequest(documents: documents.map {	ObtainSignedDocRequest.Document(
-			document: (try! Data(contentsOf: $0.fileURL)).base64EncodedString(), signatureFormat: SignatureFormat.P, conformanceLevel: ConformanceLevel.ADES_B_B, signedEnvelopeProperty: SignedEnvelopeProperty.ENVELOPED, container: "No") },
-				endEntityCertificate: certs.first!, certificateChain: Array(certs.dropFirst()), hashAlgorithmOID: hashAlgorithmOID, date: calculateHashResponse.signatureDate, signatures: signHashResponse.signatures ?? [])
-		let obtainSignedDocResponse = try await rqes.getSignedDocuments(request: obtainSignedDocRequest, accessToken: credentialAccessToken)
-
-		let documentsWithSignature = obtainSignedDocResponse.documentWithSignature.enumerated().map { i, d in Document(id: documents[i].id, fileURL: try! RQESService.saveToTempFile(data: Data(base64Encoded: d)!, fileExtension: fileExtension)) }
+		// STEP 13: Create the signed documents locally
+		// R5: Using createSignedDocuments method which works locally without base64 data or access tokens
+		try await rqes.createSignedDocuments(signatures: signHashResponse.signatures!)
+		// Return the signed documents from their output paths
+		let documentsWithSignature = documents.enumerated().map { i, document in 
+			// The signed documents are created at the output paths specified during hash calculation
+			Document(id: document.id, fileURL: outputURLs[i]) 
+		}
         return documentsWithSignature
 	}
 
