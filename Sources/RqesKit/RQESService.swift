@@ -39,11 +39,12 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 	/// - Parameter clientConfig: CSC client configuration
 	/// - Parameter defaultHashAlgorithmOID: The default hash algorithm OID
 	/// - Parameter fileExtension: The file extension to be used for the signed documents
-	required public init(clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID = .SHA256, defaultSigningAlgorithmOID: SigningAlgorithmOID = .SHA256WithRSA, fileExtension: String = ".pdf") {
+	required public init(clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID = .SHA256, defaultSigningAlgorithmOID: SigningAlgorithmOID = .SHA256WithRSA, fileExtension: String = ".pdf") async {
 		self.clientConfig = clientConfig
 		self.defaultHashAlgorithmOID = defaultHashAlgorithmOID
 		self.defaultSigningAlgorithmOID = defaultSigningAlgorithmOID
 		self.fileExtension = fileExtension
+    self.rqes = await RQES(cscClientConfig: clientConfig)
 	}
 	
 	/// Retrieve the service authorization URL

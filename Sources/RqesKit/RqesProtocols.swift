@@ -27,7 +27,7 @@ public protocol RQESServiceProtocol {
 	/// - Parameter clientConfig: CSC client configuration
 	/// - Parameter defaultHashAlgorithmOID: The default hash algorithm OID
 	/// - Parameter fileExtension: The file extension to be used for the signed documents
-	init(clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID, defaultSigningAlgorithmOID: SigningAlgorithmOID, fileExtension: String)
+	init(clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID, defaultSigningAlgorithmOID: SigningAlgorithmOID, fileExtension: String) async
 	/// Retrieve the service authorization URL
 	/// - Returns: The service authorization URL
 	/// The service authorization URL is used to authorize the service to access the user's credentials.
