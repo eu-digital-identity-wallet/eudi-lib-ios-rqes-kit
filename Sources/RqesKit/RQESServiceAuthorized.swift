@@ -15,7 +15,7 @@
  */
 
 import Foundation
-import RQES_LIBRARY
+import RQESLib
 import CommonCrypto
 import X509
 import SwiftASN1

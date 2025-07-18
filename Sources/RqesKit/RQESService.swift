@@ -15,15 +15,15 @@
  */
 
 import Foundation
-import RQES_LIBRARY
+import RQESLib
 import CommonCrypto
 import X509
 import SwiftASN1
 
-public typealias CSCClientConfig = RQES_LIBRARY.CSCClientConfig
-public typealias RSSPMetadata = RQES_LIBRARY.InfoServiceResponse
+public typealias CSCClientConfig = RQESLib.CSCClientConfig
+public typealias RSSPMetadata = RQESLib.InfoServiceResponse
 public typealias CredentialInfo = CredentialsListResponse.CredentialInfo
-public typealias HashAlgorithmOID = RQES_LIBRARY.HashAlgorithmOID
+public typealias HashAlgorithmOID = RQESLib.HashAlgorithmOID
 
  // ---------------------------
 public class RQESService: RQESServiceProtocol, @unchecked Sendable {
@@ -32,29 +32,18 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
 	var state: String?
 	var rqes: RQES!
 	var defaultHashAlgorithmOID: HashAlgorithmOID
-	var defaultSigningAlgorithmOID: SigningAlgorithmOID?
+	var defaultSigningAlgorithmOID: SigningAlgorithmOID
 	var fileExtension: String
 
 	/// Initialize the RQES service
-	/// - Parameter clientConfig: CSC client configuration (R5: must include tsaUrl for PAdES B-T support)
+	/// - Parameter clientConfig: CSC client configuration
 	/// - Parameter defaultHashAlgorithmOID: The default hash algorithm OID
 	/// - Parameter fileExtension: The file extension to be used for the signed documents
-	required public init(clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID = .SHA256, fileExtension: String = ".pdf") {
+	required public init(clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID = .SHA256, defaultSigningAlgorithmOID: SigningAlgorithmOID = .SHA256WithRSA, fileExtension: String = ".pdf") {
 		self.clientConfig = clientConfig
 		self.defaultHashAlgorithmOID = defaultHashAlgorithmOID
+		self.defaultSigningAlgorithmOID = defaultSigningAlgorithmOID
 		self.fileExtension = fileExtension
-	}
-	
-	/// Retrieve the RSSP metadata
-	public func getRSSPMetadata() async throws -> RSSPMetadata {
-		// STEP 1: Initialize an instance of RQES to access library services
-		// This initializes the RQES object for invoking various service methods
-		rqes = await RQES(cscClientConfig: clientConfig)
-		// STEP 2: Retrieve service information using the InfoService
-		let request = InfoServiceRequest(lang: "en-US")
-		let response = try await rqes.getInfo(request: request)
-		if let algo = response.signAlgorithms.algos.first { defaultSigningAlgorithmOID = SigningAlgorithmOID(rawValue: algo) }
-		return response
 	}
 	
 	/// Retrieve the service authorization URL

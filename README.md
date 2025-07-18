@@ -60,9 +60,7 @@ let cscClientConfig = CSCClientConfig(
                 clientId: "wallet-client",
                 clientSecret: "somesecret2"
         ),
-        authFlowRedirectionURI: "https://oauthdebugger.com/debug",
-        scaBaseURL: "https://walletcentric.signer.eudiw.dev"
-)
+        authFlowRedirectionURI: "https://oauthdebugger.com/debug", rsspId: "")
 var rqesService = RQESService(
     clientConfig: cscClientConfig,
     defaultHashAlgorithmOID: .SHA256

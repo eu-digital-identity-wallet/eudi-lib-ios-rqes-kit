@@ -15,7 +15,7 @@
  */
 
 import Foundation
-import RQES_LIBRARY
+import RQESLib
 import CommonCrypto
 import X509
 import SwiftASN1
@@ -24,12 +24,10 @@ import SwiftASN1
 public protocol RQESServiceProtocol {
 	associatedtype RQESServiceAuthorizedImpl: RQESServiceAuthorizedProtocol
 	/// Initialize the RQES service
-	/// - Parameter clientConfig: CSC client configuration (R5: must include tsaUrl for PAdES B-T support)
+	/// - Parameter clientConfig: CSC client configuration
 	/// - Parameter defaultHashAlgorithmOID: The default hash algorithm OID
 	/// - Parameter fileExtension: The file extension to be used for the signed documents
-	init(clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID, fileExtension: String)
-	/// Retrieve the RSSP metadata
-	func getRSSPMetadata() async throws -> RSSPMetadata
+	init(clientConfig: CSCClientConfig, defaultHashAlgorithmOID: HashAlgorithmOID, defaultSigningAlgorithmOID: SigningAlgorithmOID, fileExtension: String)
 	/// Retrieve the service authorization URL
 	/// - Returns: The service authorization URL
 	/// The service authorization URL is used to authorize the service to access the user's credentials.
