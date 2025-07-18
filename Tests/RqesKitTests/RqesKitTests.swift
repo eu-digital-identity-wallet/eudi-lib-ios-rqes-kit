@@ -14,16 +14,12 @@ import SwiftASN1
     #expect(Data(ser.serializedBytes).base64EncodedString() == certBase64)
 }
 
-@Test func ensureDefaultSignAlgorithmExists() async throws {
+@Test func ensureRQESServiceInitialize() async throws {
     let cscClientConfig = CSCClientConfig(
         OAuth2Client: CSCClientConfig.OAuth2Client(clientId: "wallet-client", clientSecret: "somesecret2"),
-        authFlowRedirectionURI: "https://oauthdebugger.com/debug",
-        scaBaseURL: "https://walletcentric.signer.eudiw.dev"
-)
+		authFlowRedirectionURI: "https://oauthdebugger.com/debug", rsspId: "")
     let rqesService = RQESService(clientConfig: cscClientConfig, defaultHashAlgorithmOID: .SHA256)
-    let rsspMetadata = try await rqesService.getRSSPMetadata()
-    #expect(rsspMetadata.signAlgorithms.algos.count > 0)
     #expect(rqesService.defaultSigningAlgorithmOID != nil)
-    print("Default signing algorithm: \(rsspMetadata.signAlgorithms.algos.first ?? "")")
+    print("Default signing algorithm: \(rqesService.defaultSigningAlgorithmOID?.description ?? "")")
     
 }
