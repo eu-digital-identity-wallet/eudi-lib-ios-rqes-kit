@@ -18,8 +18,8 @@ import SwiftASN1
     let cscClientConfig = CSCClientConfig(
         OAuth2Client: CSCClientConfig.OAuth2Client(clientId: "wallet-client", clientSecret: "somesecret2"),
 		authFlowRedirectionURI: "https://oauthdebugger.com/debug", rsspId: "")
-    let rqesService = RQESService(clientConfig: cscClientConfig, defaultHashAlgorithmOID: .SHA256)
+    let rqesService = await RQESService(clientConfig: cscClientConfig, defaultHashAlgorithmOID: .SHA256)
     #expect(rqesService.defaultSigningAlgorithmOID != nil)
-    print("Default signing algorithm: \(rqesService.defaultSigningAlgorithmOID?.description ?? "")")
+  print("Default signing algorithm: \(rqesService.defaultSigningAlgorithmOID.description)")
     
 }
