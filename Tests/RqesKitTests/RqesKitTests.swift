@@ -11,7 +11,7 @@ import SwiftASN1
     var ser = DER.Serializer()
     try cert.serialize(into: &ser)
     #expect(ser.serializedBytes == certData)
-    #expect(Data(ser.serializedBytes).base64EncodedString() == certBase64)
+  #expect(Data(ser.serializedBytes).base64EncodedString() == certBase64)
 }
 
 @Test func ensureRQESServiceInitialize() async throws {
