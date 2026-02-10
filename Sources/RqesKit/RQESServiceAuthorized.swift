@@ -121,10 +121,21 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Se
             )
         ])
         
+        guard let details = JSONUtils.stringify(
+            authorizationDetails
+        ) else {
+            throw NSError(
+                domain: "Signing alogorithm error",
+                code: 0,
+                userInfo: [NSLocalizedDescriptionKey: "Failed to create authorization details"]
+            )
+        }
+        
         let credentialResponse = try await rqes.prepareCredentialAuthorizationRequest(
             walletState: state,
-            authorizationDetails: JSONUtils.stringify(authorizationDetails)!.replacingOccurrences(of: "+", with: "%2B")
+            authorizationDetails: details
         )
+
         return URL(string: credentialResponse.authorizationCodeURL)!
     }
     
