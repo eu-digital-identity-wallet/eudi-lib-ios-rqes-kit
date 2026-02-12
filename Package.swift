@@ -15,7 +15,7 @@ let package = Package(
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
-        .package(url: "https://github.com/eu-digital-identity-wallet/eudi-lib-ios-rqes-csc-swift.git", exact: "0.6.3"),
+        .package(url: "https://github.com/eu-digital-identity-wallet/eudi-lib-ios-rqes-csc-swift.git", exact: "0.7.1"),
         .package(url: "https://github.com/apple/swift-certificates.git", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.5.3"),
     ],
@@ -26,7 +26,7 @@ let package = Package(
             name: "RqesKit", dependencies: [
                 .product(name: "RQESLib", package: "eudi-lib-ios-rqes-csc-swift"),
                 .product(name: "X509", package: "swift-certificates"),
-                 .product(name: "Logging", package: "swift-log")
+                .product(name: "Logging", package: "swift-log")
             ]),
         .testTarget(
             name: "RqesKitTests",
