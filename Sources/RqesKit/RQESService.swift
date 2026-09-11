@@ -15,6 +15,7 @@
  */
 
 import Foundation
+import MdocDataModel18013
 import RQESLib
 import CommonCrypto
 import X509
@@ -33,21 +34,44 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
     var rqes: RQES!
     var defaultHashAlgorithmOID: HashAlgorithmOID
     var defaultSigningAlgorithmOID: SigningAlgorithmOID
+    let transactionLogger: (any TransactionLogger)?
+    let signingServiceName: MultiLangString?
     var fileExtension: String
     
     /// Initialize the RQES service
     /// - Parameter clientConfig: CSC client configuration
     /// - Parameter defaultHashAlgorithmOID: The default hash algorithm OID
     /// - Parameter fileExtension: The file extension to be used for the signed documents
-    required public init(
+    required public convenience init(
+        clientConfig: CSCClientConfig,
+        defaultHashAlgorithmOID: HashAlgorithmOID,
+        defaultSigningAlgorithmOID: SigningAlgorithmOID,
+        fileExtension: String
+    ) async {
+        await self.init(
+            clientConfig: clientConfig,
+            defaultHashAlgorithmOID: defaultHashAlgorithmOID,
+            defaultSigningAlgorithmOID: defaultSigningAlgorithmOID,
+            fileExtension: fileExtension,
+            transactionLogger: nil
+        )
+    }
+
+    /// Creates a service with optional transaction logging for successful and failed signing attempts.
+    /// Logger errors do not affect signing. The service name is supplied by the host when known.
+    public init(
         clientConfig: CSCClientConfig,
         defaultHashAlgorithmOID: HashAlgorithmOID = .SHA256,
         defaultSigningAlgorithmOID: SigningAlgorithmOID = .SHA256WithRSA,
-        fileExtension: String = ".pdf"
+        fileExtension: String = ".pdf",
+        transactionLogger: (any TransactionLogger)? = nil,
+        signingServiceName: MultiLangString? = nil
     ) async {
         self.clientConfig = clientConfig
         self.defaultHashAlgorithmOID = defaultHashAlgorithmOID
         self.defaultSigningAlgorithmOID = defaultSigningAlgorithmOID
+        self.transactionLogger = transactionLogger
+        self.signingServiceName = signingServiceName
         self.fileExtension = fileExtension
         self.rqes = await RQES(cscClientConfig: clientConfig)
     }
@@ -71,7 +95,17 @@ public class RQESService: RQESServiceProtocol, @unchecked Sendable {
         let tokenRequest = AccessTokenRequest(code: authorizationCode, state: state!)
         let tokenResponse = try await rqes.requestAccessTokenAuthFlow(request: tokenRequest)
         let accessToken = tokenResponse.accessToken
-        return RQESServiceAuthorized(rqes, clientConfig: self.clientConfig, defaultHashAlgorithmOID: defaultHashAlgorithmOID, defaultSigningAlgorithmOID: defaultSigningAlgorithmOID, fileExtension: fileExtension, state: state!, accessToken: accessToken)
+        return RQESServiceAuthorized(
+            rqes,
+            clientConfig: clientConfig,
+            defaultHashAlgorithmOID: defaultHashAlgorithmOID,
+            defaultSigningAlgorithmOID: defaultSigningAlgorithmOID,
+            fileExtension: fileExtension,
+            state: state!,
+            accessToken: accessToken,
+            transactionLogger: transactionLogger,
+            signingServiceName: signingServiceName
+        )
     }
     
     

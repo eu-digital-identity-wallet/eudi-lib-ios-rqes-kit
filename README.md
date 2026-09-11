@@ -119,6 +119,66 @@ let signAlgorithm = SigningAlgorithmOID.ECDSA_SHA256
 let signedDocuments = try await authorizedCredential.signDocuments(signAlgorithmOID: signAlgorithm)
 ```
 
+## Signing transaction logging (pending API change)
+
+The pending change adds two optional parameters to the public initializers of
+`RQESService`, `RQESServiceAuthorized`, and `RQESServiceCredentialAuthorized`:
+
+| Parameter | Type | Default | Purpose |
+| --- | --- | --- | --- |
+| `transactionLogger` | `(any TransactionLogger)?` | `nil` | Receives signing transaction entries for storage by the host app. |
+| `signingServiceName` | `MultiLangString?` | `nil` | Identifies the signing service in each entry's `interactingPartyName`. |
+
+Both types come from `MdocDataModel18013`. 
+Pass an actor conforming to `TransactionLogger` when creating the service. The actor
+implements `func log(transaction: TransactionEntry) async throws` and stores or updates
+entries by `transactionIdentifier` in the host app's chosen storage.
+
+```swift
+import RqesKit
+import MdocDataModel18013
+
+// transactionLogger is your app's actor conforming to TransactionLogger.
+let service = await RQESService(
+    clientConfig: cscClientConfig,
+    transactionLogger: transactionLogger,
+    signingServiceName: MultiLangString(lang: "en", content: "ACME Trust Services")
+)
+```
+
+The service passes the logger and service name through `authorizeService()` and
+`authorizeCredential()` automatically. If you construct either authorized service
+directly, pass the same optional parameters to its initializer. Existing calls can
+omit both parameters to keep logging disabled.
+
+The logger receives one `TransactionEntry.signingSealing` per document when
+`signDocuments()` succeeds (`.completed`) or throws (`.notCompleted`). Logging is
+awaited before the method returns or rethrows the original signing error.
+Entries contain the outcome, failure reason (`error.localizedDescription` on failure),
+certificate serial number, document ID and filename, Base64 digest, and signed file
+size in bytes when available. Each attempt has a shared `signingTransactionIdentifier`
+and distinct transaction identifiers per document. The optional service name comes
+from the host app. File contents and access tokens are not included.
+
+Logging is disabled by default. Logger errors do not affect signing or prevent logging other documents. Failures before `signDocuments()` (including authorization failures) are not logged.
+
+## Running tests
+
+With Xcode and Ruby/Bundler installed, run:
+
+```sh
+bundle config set --local path .build/bundle
+bundle install
+bundle exec fastlane ios tests
+```
+
+The lane tests the `RqesKit` package on the iPhone Air simulator and writes reports
+and an `.xcresult` bundle to `fastlane/test_output`. To use another installed simulator:
+
+```sh
+TEST_DEVICE="iPhone 17 Pro" bundle exec fastlane ios tests
+```
+
 ## How to contribute
 
 We welcome contributions to this project. To ensure that the process is smooth for everyone

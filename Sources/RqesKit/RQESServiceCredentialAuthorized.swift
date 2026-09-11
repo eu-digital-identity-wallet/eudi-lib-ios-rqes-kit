@@ -15,6 +15,7 @@
  */
 
 import Foundation
+import MdocDataModel18013
 import RQESLib
 import CommonCrypto
 import X509
@@ -32,6 +33,8 @@ public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedPro
     var calculateHashResponse: DocumentDigests
     var hashAlgorithmOID: HashAlgorithmOID
     var defaultSigningAlgorithmOID: SigningAlgorithmOID?
+    let transactionLogger: (any TransactionLogger)?
+    let signingServiceName: MultiLangString?
     var fileExtension: String
     var outputURLs: [URL]
     
@@ -45,7 +48,9 @@ public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedPro
         hashAlgorithmOID: HashAlgorithmOID,
         defaultSigningAlgorithmOID: SigningAlgorithmOID?,
         fileExtension: String,
-        outputURLs: [URL]
+        outputURLs: [URL],
+        transactionLogger: (any TransactionLogger)? = nil,
+        signingServiceName: MultiLangString? = nil
     ) {
         self.rqes = rqes
         self.clientConfig = clientConfig
@@ -55,6 +60,8 @@ public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedPro
         self.calculateHashResponse = calculateHashResponse
         self.hashAlgorithmOID = hashAlgorithmOID
         self.defaultSigningAlgorithmOID = defaultSigningAlgorithmOID
+        self.transactionLogger = transactionLogger
+        self.signingServiceName = signingServiceName
         self.fileExtension = fileExtension
         self.outputURLs = outputURLs
     }
@@ -70,6 +77,25 @@ public class RQESServiceCredentialAuthorized: RQESServiceCredentialAuthorizedPro
     /// The list of documents that will be signed using the authorized credential are the documents
     /// that were passed to the ``RQESServiceAuthorizedProtocol.getCredentialAuthorizationUrl`` method.
     public func signDocuments(signAlgorithmOID: SigningAlgorithmOID? = nil) async throws -> [Document] {
+        let signingLog = RQESSigningLog(
+            logger: transactionLogger,
+            certificateIdentifier: credentialInfo.cert.serialNumber,
+            serviceName: signingServiceName,
+            documents: documents,
+            hashes: calculateHashResponse.hashes,
+            outputURLs: outputURLs
+        )
+        do {
+            let signedDocuments = try await performSigning(signAlgorithmOID: signAlgorithmOID)
+            await signingLog.record(result: .completed)
+            return signedDocuments
+        } catch {
+            await signingLog.record(result: .notCompleted, reason: error.localizedDescription)
+            throw error
+        }
+    }
+
+    private func performSigning(signAlgorithmOID: SigningAlgorithmOID?) async throws -> [Document] {
         // STEP 12: Sign the calculated hash with the credential
         guard let signAlgo = signAlgorithmOID ?? defaultSigningAlgorithmOID else {
             throw NSError(
