@@ -15,6 +15,7 @@
  */
 
 import Foundation
+import MdocDataModel18013
 import RQESLib
 import CommonCrypto
 import X509
@@ -35,6 +36,8 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Se
     var hashAlgorithmOID: HashAlgorithmOID?
     var defaultHashAlgorithmOID: HashAlgorithmOID
     var defaultSigningAlgorithmOID: SigningAlgorithmOID?
+    let transactionLogger: (any TransactionLogger)?
+    let signingServiceName: MultiLangString?
     var fileExtension: String
     
     public init(
@@ -44,12 +47,16 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Se
         defaultSigningAlgorithmOID: SigningAlgorithmOID?,
         fileExtension: String,
         state: String,
-        accessToken: String
+        accessToken: String,
+        transactionLogger: (any TransactionLogger)? = nil,
+        signingServiceName: MultiLangString? = nil
     ) {
         self.rqes = rqes
         self.clientConfig = clientConfig
         self.defaultHashAlgorithmOID = defaultHashAlgorithmOID
         self.defaultSigningAlgorithmOID = defaultSigningAlgorithmOID
+        self.transactionLogger = transactionLogger
+        self.signingServiceName = signingServiceName
         self.fileExtension = fileExtension
         self.state = state
         self.accessToken = accessToken
@@ -170,7 +177,9 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Se
             hashAlgorithmOID: hashAlgorithmOID!,
             defaultSigningAlgorithmOID: defaultSigningAlgorithmOID,
             fileExtension: fileExtension,
-            outputURLs: outputURLs!
+            outputURLs: outputURLs!,
+            transactionLogger: transactionLogger,
+            signingServiceName: signingServiceName
         )
     }
 }

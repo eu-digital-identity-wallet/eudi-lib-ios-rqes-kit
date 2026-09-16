@@ -63,3 +63,6 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# Local Bundler configuration (gems are installed under .build/)
+.bundle/
