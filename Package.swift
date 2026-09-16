@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
     name: "RqesKit",
     defaultLocalization: "en",
-    platforms: [.iOS(.v16)],
+    platforms: [.macOS(.v15), .iOS(.v17)],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
@@ -15,7 +15,7 @@ let package = Package(
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
-        .package(path: "../eudi-lib-ios-iso18013-data-model"),
+        .package(url: "https://github.com/eu-digital-identity-wallet/eudi-lib-ios-iso18013-data-model.git", exact: "0.26.0"),
         .package(url: "https://github.com/eu-digital-identity-wallet/eudi-lib-ios-rqes-csc-swift.git", exact: "0.10.0"),
         .package(url: "https://github.com/apple/swift-certificates.git", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-log.git", from: "1.5.3"),
