@@ -119,9 +119,9 @@ let signAlgorithm = SigningAlgorithmOID.ECDSA_SHA256
 let signedDocuments = try await authorizedCredential.signDocuments(signAlgorithmOID: signAlgorithm)
 ```
 
-## Signing transaction logging (pending API change)
+## Signing transaction logging 
 
-The pending change adds two optional parameters to the public initializers of
+Two optional parameters where added to the public initializers of
 `RQESService`, `RQESServiceAuthorized`, and `RQESServiceCredentialAuthorized`:
 
 | Parameter | Type | Default | Purpose |
@@ -158,9 +158,7 @@ Entries contain the outcome, failure reason (`error.localizedDescription` on fai
 certificate serial number, document ID and filename, Base64 digest, and signed file
 size in bytes when available. Each attempt has a shared `signingTransactionIdentifier`
 and distinct transaction identifiers per document. The optional service name comes
-from the host app. File contents and access tokens are not included.
-
-Logging is disabled by default. Logger errors do not affect signing or prevent logging other documents. Failures before `signDocuments()` (including authorization failures) are not logged.
+from the host app. 
 
 ## Running tests
 
