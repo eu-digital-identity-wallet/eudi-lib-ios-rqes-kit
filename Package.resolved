@@ -1,13 +1,13 @@
 {
-  "originHash" : "c8232112cda115580932e62335dc9dce1520bde5dc5436eb6741e0001e0c4da1",
+  "originHash" : "6034a96cd9d3351864d9e0ee8502b4e79ccc4e5fa2dbdeb4e783a9d270d13e8e",
   "pins" : [
     {
       "identity" : "eudi-lib-ios-iso18013-data-model",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eu-digital-identity-wallet/eudi-lib-ios-iso18013-data-model.git",
       "state" : {
-        "revision" : "65481ab832b19c8579f79539e4391a6b156fc408",
-        "version" : "0.26.0"
+        "revision" : "12ab54993c2d38bd14c20ce880722c820fa9d9d2",
+        "version" : "0.26.2"
       }
     },
     {
@@ -78,8 +78,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-log.git",
       "state" : {
-        "revision" : "3ffafb9722d5d918c614feb496c8789a3b59d222",
-        "version" : "1.15.0"
+        "revision" : "9c6fb14227f55d8f711ce3847dc2f419fb0ecacb",
+        "version" : "1.15.1"
       }
     },
     {
