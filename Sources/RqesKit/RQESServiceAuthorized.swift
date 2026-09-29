@@ -119,7 +119,7 @@ public class RQESServiceAuthorized: RQESServiceAuthorizedProtocol, @unchecked Se
         authorizationDetails = AuthorizationDetails([
             AuthorizationDetailsItem(
                 documentDigests: try hashes.enumerated().map { i,h in
-                    try DocumentDigest.forToken(label: documents[i].id, hash: h)
+                    try DocumentDigest.forToken(label: documents[i].fileURL.lastPathComponent, hash: h)
                 },
                 credentialID: credentialInfo.credentialID,
                 hashAlgorithmOID: self.hashAlgorithmOID!,
